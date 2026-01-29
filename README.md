@@ -4,9 +4,11 @@
 
 <h2>Description</h2>
 This project documents the design and implementation of my home network and homelab environment. The goal was to build a secure, scalable, and production-style setup that mirrors small-enterprise infrastructure patterns while remaining manageable in a home environment.
+<br/>
+<br />
 
 The environment integrates enterprise-grade networking hardware, virtualization, software-defined storage, and containerized services. Emphasis was placed on network segmentation, service isolation, storage reliability, and self-hosting critical services such as DNS filtering and media automation.
-<br />
+<br/>
 
 <h2>Core Technologies & Utilities Used</h2>
 
