@@ -23,7 +23,7 @@ Remote Client → Tailscale VPN → Traefik (:443) → Internal Service
 
 Traefik is configured using a static configuration file:
 
-- [traefik.yml](traefik.yml) — Core Traefik configuration (entrypoints, providers, logging, ACME)
+- [traefik.yml](traefik.yaml) — Core Traefik configuration (entrypoints, providers, logging, ACME)
 
 All sensitive values have been sanitized for inclusion in this repository.
 
