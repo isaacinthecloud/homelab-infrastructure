@@ -52,34 +52,12 @@ Docker is used to host lightweight services, including:
 </p>
 
 <ul>
-  <li><b>AdGuard Home</b> – Network-wide DNS-based ad and tracker blocking</li>
-  <li><b>ARR Suite</b> – Automated media management and orchestration</li>
+  <li><b>AdGuard Home</b> - Network-wide DNS-based ad and tracker blocking</li>
+  <li><b>ARR Suite</b> - Automated media management and orchestration</li>
 </ul>
 
 <p>
 Running these services in containers provides isolation, simplified updates, and portability. This approach avoids tight coupling between services and the host OS while allowing quick recovery or migration if needed.
-</p>
-
-<h2>Program Walk-through</h2>
-
-<p align="center">
-Network Gateway & Access Point Configuration: <br/>
-<img src="https://i.imgur.com/placeholder1.png" height="80%" width="80%" alt="Ubiquiti Network Topology"/>
-<br />
-<br />
-
-Proxmox Virtual Machine Overview: <br/>
-<img src="https://i.imgur.com/placeholder2.png" height="80%" width="80%" alt="Proxmox VM Dashboard"/>
-<br />
-<br />
-
-TrueNAS Storage Pool Configuration (ZFS): <br/>
-<img src="https://i.imgur.com/placeholder3.png" height="80%" width="80%" alt="TrueNAS ZFS Pool"/>
-<br />
-<br />
-
-Docker Container Management: <br/>
-<img src="https://i.imgur.com/placeholder4.png" height="80%" width="80%" alt="Docker Containers"/>
 </p>
 
 <h2>Key Outcomes & Skills Demonstrated</h2>
@@ -100,17 +78,16 @@ While the current environment is fully functional, the homelab is designed to ev
 
 <ul>
   <li>
-    <b>Centralized Reverse Proxy & TLS Termination</b><br/>
-    Implementing <b>Traefik</b> as a reverse proxy to automatically manage certificates and enforce HTTPS across self-hosted services. This will eliminate browser security warnings, provide encrypted access to internal applications, and more closely mirror modern cloud-native service exposure patterns.
+    <b>Centralized Authentication & Authorization</b><br/>
+    Future plans include integrating an authentication provider (e.g., Authelia or Authentik) with Traefik middleware to provide single sign-on (SSO), stronger access control, and consistent authentication across all internal services.
   </li>
 
   <li>
-    <b>Automated Certificate Management</b><br/>
-    Leveraging ACME-based certificate issuance (e.g., Let's Encrypt) through Traefik to handle certificate creation, renewal, and rotation without manual intervention.
+    <b>Monitoring, Metrics, and Alerting</b><br/>
+    Implementing centralized monitoring to collect metrics from Proxmox, Docker containers, and TrueNAS. This will improve visibility into resource utilization, service health, and long-term trends.
   </li>
-
   <li>
-    <b>Service Exposure Hardening</b><br/>
-    Defining explicit ingress rules and limiting service exposure to only required networks, reducing the attack surface while maintaining usability.
+    <b>Backup & Disaster Recovery Strategy</b><br/>
+    Implementing a structured backup strategy for critical data and configurations including off-host backups of application configs and documented recovery procedures to protect against data loss, misconfiguration, or hardware failure.
   </li>
 </ul>
