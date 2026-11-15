@@ -1,0 +1,17 @@
+[Unit]
+Description=Bring up /root/docker compose stack after boot (fixes gluetun netns race)
+Wants=network-online.target
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/docker
+# let dockerd finish its own restart-policy pass first
+ExecStartPre=/bin/sleep 20
+ExecStart=/usr/bin/docker compose up -d --remove-orphans=false
+TimeoutStartSec=600
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

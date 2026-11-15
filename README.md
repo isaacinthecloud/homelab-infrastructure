@@ -18,8 +18,12 @@ The environment integrates enterprise-grade networking hardware, virtualization,
 - <b>TrueNAS Scale</b> (Virtual Machine)
 - <b>Docker</b> (Containerization)
 - <b>AdGuard Home</b>
+- <b>Tailscale</b> (Remote Access)
+- <b>Traefik</b> (Reverse Proxy, Let's Encrypt DNS-01)
 - <b>Home Media Management</b>
 - <b>ZFS</b>
+- <b>restic</b> (Encrypted Backups)
+- <b>AWS</b> (Route 53, SES, Budgets)
 
 <h2>Environments Used</h2>
 
@@ -50,12 +54,15 @@ This design was chosen over running TrueNAS bare-metal to maintain flexibility a
 <h2>Containerized Services</h2>
 
 <p>
-Docker is used to host lightweight services, including:
+Core network services run in their own LXC containers (AdGuard Home for DNS filtering, Tailscale for remote access), so they stay up even if the Docker host is down. A dedicated Docker LXC hosts:
 </p>
 
 <ul>
-  <li><b>AdGuard Home</b> - Network-wide DNS-based ad and tracker blocking</li>
-  <li><b>ARR Suite</b> - Automated media management and orchestration</li>
+  <li><b>Traefik</b> - HTTPS reverse proxy with Let's Encrypt certificates via DNS-01</li>
+  <li><b>ARR Suite + qBittorrent</b> - Automated media management, routed through a Gluetun VPN container</li>
+  <li><b>Jellyfin</b> - Media server with Intel Quick Sync hardware transcoding</li>
+  <li><b>Syncthing</b> - Always-on sync hub for an Obsidian vault</li>
+  <li><b>Diun</b> - Weekly email when a pinned container image has a newer version</li>
 </ul>
 
 <p>
@@ -70,7 +77,25 @@ Running these services in containers provides isolation, simplified updates, and
   <li>Configured ZFS-backed NAS services with disk passthrough</li>
   <li>Deployed containerized services with an emphasis on isolation and maintainability</li>
   <li>Applied real-world infrastructure and DevOps principles in a home lab environment</li>
+  <li>Designed layered backups (Proxmox guests, host config, ZFS snapshots, encrypted laptop backups) with failure alerting, plus encrypted off-site copies in AWS Glacier Deep Archive behind least-privilege IAM, versioning and an automatic cost hard-block</li>
+  <li>Built authenticated email alerting (SPF, DKIM, DMARC via AWS SES) with least-privilege IAM and cloud cost guardrails</li>
+  <li>Ran a full patch cycle (TrueNAS train upgrades, Proxmox, LXC, Docker 28 → 29) and documented a repeatable runbook</li>
 </ul>
+
+<h2>Repository Layout</h2>
+
+| Folder | Contents |
+|---|---|
+| [ubiquiti](ubiquiti/README.md) | VLAN design and gateway configuration |
+| [proxmox](proxmox/README.md) | Hypervisor, bridges, LXC and VM configuration |
+| [truenas](truenas/README.md) | ZFS pool, datasets, shares, disk passthrough |
+| [docker](docker/README.md) | Compose stack, Traefik, media stack, Syncthing, Diun |
+| [adguard](adguard/README.md) / [tailscale](tailscale/README.md) | DNS filtering and remote access |
+| [backups](backups/README.md) | Backup layers, schedules, laptop restic scripts |
+| [monitoring](monitoring/README.md) | Email alerting and cost guardrails |
+| [security](security/README.md) | Threat model, hardening, secrets handling |
+| [docs/maintenance.md](docs/maintenance.md) | Update runbook and lessons learned |
+| [diagrams](diagrams/README.md) | Architecture diagrams |
 
 <h2>Planned Improvements & Future Enhancements</h2>
 
@@ -85,11 +110,11 @@ While the current environment is fully functional, the homelab is designed to ev
   </li>
 
   <li>
-    <b>Monitoring, Metrics, and Alerting</b><br/>
-    Implementing centralized monitoring to collect metrics from Proxmox, Docker containers, and TrueNAS. This will improve visibility into resource utilization, service health, and long-term trends.
+    <b>Monitoring & Metrics</b><br/>
+    Email alerting is in place (see <a href="monitoring/README.md">monitoring</a>). Next: centralized metrics and dashboards for Proxmox, Docker containers, and TrueNAS to show resource utilization, service health, and long-term trends.
   </li>
   <li>
-    <b>Backup & Disaster Recovery Strategy</b><br/>
-    Implementing a structured backup strategy for critical data and configurations including off-host backups of application configs and documented recovery procedures to protect against data loss, misconfiguration, or hardware failure.
+    <b>Restore Testing</b><br/>
+    Layered on-site backups and encrypted off-site copies in AWS S3 Glacier Deep Archive are in place (see <a href="backups/README.md">backups</a>). Next: scheduled restore tests.
   </li>
 </ul>

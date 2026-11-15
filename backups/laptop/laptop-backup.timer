@@ -1,0 +1,11 @@
+[Unit]
+Description=Hourly check for the daily laptop backup to TrueNAS
+
+[Timer]
+OnBootSec=15min
+OnCalendar=hourly
+RandomizedDelaySec=10min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

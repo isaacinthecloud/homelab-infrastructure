@@ -1,0 +1,68 @@
+#!/bin/bash
+# laptop-backup: daily restic backup of / and /home to TrueNAS (datastore/backups/laptop).
+# Reads from temporary read-only btrfs snapshots so the backup is consistent; Omarchy's
+# snapper snapshots are not touched. Runs hourly from laptop-backup.timer but only does
+# real work once per ~20h, so missed days (asleep, away, NAS down) are retried.
+set -euo pipefail
+
+source /etc/restic/env          # RESTIC_REPOSITORY, RESTIC_PASSWORD_FILE, SFTP_CMD, NAS_HOST
+STATE=/var/lib/laptop-backup
+SNAP=/.laptop-backup-snap       # temp snapshots live here (nested subvols, never in snapper's)
+MIN_AGE_H=20
+mkdir -p "$STATE"
+
+exec 9>"$STATE/lock"
+flock -n 9 || { echo "another run is active"; exit 0; }
+
+if [[ "${1:-}" != "--force" && -f "$STATE/last-success" ]]; then
+  age_h=$(( ( $(date +%s) - $(stat -c %Y "$STATE/last-success") ) / 3600 ))
+  (( age_h < MIN_AGE_H )) && { echo "last success ${age_h}h ago; nothing to do"; exit 0; }
+fi
+
+# The first (full) backup is several GB: only do it on the home LAN, not over Tailscale.
+if [[ ! -f "$STATE/last-success" && "${1:-}" != "--force" ]] && \
+   ! ip -4 -o addr show scope global | grep -v tailscale0 | grep -q ' inet 10\.2\.1\.'; then
+  echo "first full backup waits for the home LAN (10.2.1.0/24); skipping"
+  exit 0
+fi
+
+if ! timeout 8 bash -c "</dev/tcp/$NAS_HOST/22" 2>/dev/null; then
+  echo "TrueNAS ($NAS_HOST) not reachable; skipping, will retry next hour"
+  exit 0
+fi
+
+cleanup() {
+  for s in root home; do
+    [[ -d "$SNAP/$s" ]] && btrfs subvolume delete -c "$SNAP/$s" >/dev/null || true
+  done
+}
+trap cleanup EXIT
+cleanup
+mkdir -p "$SNAP"
+btrfs subvolume snapshot -r /     "$SNAP/root" >/dev/null
+btrfs subvolume snapshot -r /home "$SNAP/home" >/dev/null
+
+R=(restic -o "sftp.command=$SFTP_CMD")
+
+# Clear locks left by interrupted runs (restic only removes stale ones; flock above
+# already prevents two local runs from overlapping).
+"${R[@]}" unlock
+
+"${R[@]}" backup --one-file-system --exclude-caches \
+  --exclude-file /etc/restic/excludes \
+  --tag laptop --host "$(hostname)" \
+  "$SNAP/root" "$SNAP/home"
+
+"${R[@]}" forget --tag laptop --host "$(hostname)" \
+  --keep-daily 7 --keep-weekly 4 --keep-monthly 6
+
+# Weekly: prune unreferenced data and verify a 5% sample of the repository.
+if [[ ! -f "$STATE/last-prune" ]] || \
+   (( $(date +%s) - $(stat -c %Y "$STATE/last-prune") > 7*86400 )); then
+  "${R[@]}" prune
+  "${R[@]}" check --read-data-subset=5%
+  touch "$STATE/last-prune"
+fi
+
+touch "$STATE/last-success"
+echo "backup complete"

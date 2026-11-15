@@ -1,0 +1,13 @@
+[Unit]
+Description=Restic backup of / and /home to TrueNAS
+Wants=network-online.target
+After=network-online.target
+OnFailure=laptop-backup-notify.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/laptop-backup
+Nice=19
+IOSchedulingClass=idle
+CPUSchedulingPolicy=idle
+TimeoutStartSec=6h

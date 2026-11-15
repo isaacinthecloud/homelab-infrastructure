@@ -1,0 +1,12 @@
+#!/bin/sh
+# Kick the TrueNAS backup as soon as the laptop joins the home LAN (10.2.1.0/24).
+# Safe to fire often: /usr/local/bin/laptop-backup only does real work once per ~20h.
+case "$2" in
+    up|dhcp4-change|connectivity-change) ;;
+    *) exit 0 ;;
+esac
+
+if ip -4 -o addr show scope global | grep -v tailscale0 | grep -q ' inet 10\.2\.1\.'; then
+    systemctl start --no-block laptop-backup.service
+fi
+exit 0

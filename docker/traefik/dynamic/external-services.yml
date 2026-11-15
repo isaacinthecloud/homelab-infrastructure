@@ -1,0 +1,44 @@
+# File-provider routes for services that are NOT containers on this host.
+# Gives Proxmox, TrueNAS and AdGuard a trusted Let's Encrypt certificate under
+# *.lab.example.com. IPs are placeholders.
+http:
+  routers:
+    proxmox:
+      rule: "Host(`proxmox.lab.example.com`)"
+      entryPoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+      service: proxmox
+    truenas:
+      rule: "Host(`truenas.lab.example.com`)"
+      entryPoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+      service: truenas
+    adguard:
+      rule: "Host(`adguard.lab.example.com`)"
+      entryPoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+      service: adguard
+
+  services:
+    proxmox:
+      loadBalancer:
+        servers:
+          - url: "https://10.2.1.x:8006"
+        serversTransport: insecureTransport
+    truenas:
+      loadBalancer:
+        servers:
+          - url: "https://10.2.1.x"
+        serversTransport: insecureTransport
+    adguard:
+      loadBalancer:
+        servers:
+          - url: "http://10.2.1.x"
+
+  serversTransports:
+    # Backends use self-signed certs; Traefik terminates the trusted cert.
+    insecureTransport:
+      insecureSkipVerify: true

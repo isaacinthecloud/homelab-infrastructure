@@ -1,5 +1,17 @@
-version: "3.9"
-
+# =============================================================================
+# Homelab Docker stack (LXC 103) - sanitized copy of the live compose file.
+#
+# - Every secret and the real domain come from .env (see .env.example);
+#   nothing sensitive is written in this file.
+# - Images are pinned to exact versions. Updates are deliberate: Diun emails
+#   when a new tag exists, then the tag is edited here (see docs/maintenance.md).
+# - /data       = NFS dataset datastore/data, mounted on the Proxmox host and
+#                 bind-mounted into the LXC (torrents/ + media/ on one
+#                 filesystem so *arr imports are instant hardlinks).
+# - /obsidian   = NFS share for the Obsidian vault (Syncthing).
+# - /mnt/truenas/Config/* is a LOCAL directory on the LXC root disk (historic
+#   name); app databases (SQLite) are kept off NFS on purpose.
+# =============================================================================
 networks:
   traefik-net:
     name: traefik-net
@@ -11,7 +23,7 @@ services:
   # TRAEFIK - Reverse Proxy with SSL
   # ===========================================
   traefik:
-    image: traefik:latest
+    image: traefik:v3.7.19
     container_name: traefik
     restart: unless-stopped
     security_opt:
@@ -22,33 +34,33 @@ services:
       - 80:80
       - 443:443
     environment:
-      - AWS_ACCESS_KEY_ID=your_aws_key
-      - AWS_SECRET_ACCESS_KEY=your_aws_secret
-      - AWS_REGION=your_region
-      - AWS_HOSTED_ZONE_ID=your_zone_id
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_HOSTED_ZONE_ID=${AWS_HOSTED_ZONE_ID}
     volumes:
-      - ./traefik/traefik.yml:/traefik.yml:ro
-      - ./traefik/acme:/acme
-      - ./traefik/logs:/var/log/traefik
-      - ./traefik/dynamic:/dynamic:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /root/docker/traefik/traefik.yml:/traefik.yml:ro
+      - /root/docker/traefik/acme:/acme
+      - /root/docker/traefik/logs:/var/log/traefik
+      - /root/docker/traefik/dynamic:/dynamic:ro
     labels:
       - "traefik.enable=true"
       # Dashboard
-      - "traefik.http.routers.traefik.rule=Host(`traefik.example.lab`)"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.lab.${DOMAIN}`)"
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik.service=api@internal"
       - "traefik.http.routers.traefik.middlewares=traefik-auth"
       # Basic Auth
-      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:hashedpassword"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIK_AUTH}"
 
   # ===========================================
   # PORTAINER - Container Management
   # ===========================================
   portainer:
-    image: portainer/portainer-ce:latest
+    image: portainer/portainer-ce:2.45.3
     container_name: portainer
     restart: unless-stopped
     security_opt:
@@ -56,12 +68,12 @@ services:
     networks:
       - traefik-net
     volumes:
-      - ./portainer:/data
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /root/docker/portainer:/data
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.portainer.rule=Host(`portainer.example.lab`)"
+      - "traefik.http.routers.portainer.rule=Host(`portainer.lab.${DOMAIN}`)"
       - "traefik.http.routers.portainer.entrypoints=websecure"
       - "traefik.http.routers.portainer.tls.certresolver=letsencrypt"
       - "traefik.http.services.portainer.loadbalancer.server.port=9000"
@@ -70,160 +82,264 @@ services:
   # GLUETUN - VPN Container
   # ===========================================
   gluetun:
-    image: qmcgaw/gluetun
+    image: qmcgaw/gluetun:v3.41.3
     container_name: gluetun
     cap_add:
       - NET_ADMIN
     devices:
       - /dev/net/tun:/dev/net/tun
+    volumes:
+      - /root/docker/gluetun:/gluetun
     networks:
       - traefik-net
     ports:
+      # Torrent ports (direct access needed for peers)
       - 6881:6881
       - 6881:6881/udp
     environment:
       - VPN_SERVICE_PROVIDER=nordvpn
       - VPN_TYPE=openvpn
-      - OPENVPN_USER=your_vpn_user
-      - OPENVPN_PASSWORD=your_vpn_password
+      - OPENVPN_USER=${VPN_USER}
+      - OPENVPN_PASSWORD=${VPN_PASSWORD}
       - SERVER_COUNTRIES=Netherlands
-      - TZ=Etc/UTC
+      - UPDATER_PERIOD=24h
+      - TZ=${TZ}
     restart: unless-stopped
-
+    labels:
+      - "traefik.enable=true"
+      # Prowlarr
+      - "traefik.http.routers.prowlarr.rule=Host(`prowlarr.lab.${DOMAIN}`)"
+      - "traefik.http.routers.prowlarr.entrypoints=websecure"
+      - "traefik.http.routers.prowlarr.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.prowlarr.service=prowlarr"
+      - "traefik.http.services.prowlarr.loadbalancer.server.port=9696"
+      # Radarr
+      - "traefik.http.routers.radarr.rule=Host(`radarr.lab.${DOMAIN}`)"
+      - "traefik.http.routers.radarr.entrypoints=websecure"
+      - "traefik.http.routers.radarr.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.radarr.service=radarr"
+      - "traefik.http.services.radarr.loadbalancer.server.port=7878"
+      # Sonarr
+      - "traefik.http.routers.sonarr.rule=Host(`sonarr.lab.${DOMAIN}`)"
+      - "traefik.http.routers.sonarr.entrypoints=websecure"
+      - "traefik.http.routers.sonarr.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.sonarr.service=sonarr"
+      - "traefik.http.services.sonarr.loadbalancer.server.port=8989"
+      # Bazarr
+      - "traefik.http.routers.bazarr.rule=Host(`bazarr.lab.${DOMAIN}`)"
+      - "traefik.http.routers.bazarr.entrypoints=websecure"
+      - "traefik.http.routers.bazarr.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.bazarr.service=bazarr"
+      - "traefik.http.services.bazarr.loadbalancer.server.port=6767"
+      # Lidarr
+      - "traefik.http.routers.lidarr.rule=Host(`lidarr.lab.${DOMAIN}`)"
+      - "traefik.http.routers.lidarr.entrypoints=websecure"
+      - "traefik.http.routers.lidarr.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.lidarr.service=lidarr"
+      - "traefik.http.services.lidarr.loadbalancer.server.port=8686"
+      # qBittorrent
+      - "traefik.http.routers.qbittorrent.rule=Host(`qbt.lab.${DOMAIN}`)"
+      - "traefik.http.routers.qbittorrent.entrypoints=websecure"
+      - "traefik.http.routers.qbittorrent.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.qbittorrent.service=qbittorrent"
+      - "traefik.http.services.qbittorrent.loadbalancer.server.port=8080"
   # ===========================================
-  # RADARR
+  # RADARR - Movie Management
   # ===========================================
   radarr:
-    image: lscr.io/linuxserver/radarr:latest
+    image: lscr.io/linuxserver/radarr:6.4.4.10685-ls326
     container_name: radarr
     network_mode: "service:gluetun"
     environment:
       - PUID=0
       - PGID=0
-      - TZ=Etc/UTC
+      - TZ=${TZ}
     volumes:
-      - ./radarr/config:/config
-      - ./movies:/movies
-      - ./downloads/complete:/downloads
+      - /mnt/truenas/Config/radarr:/config
+      - /data:/data
     restart: unless-stopped
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
 
   # ===========================================
-  # SONARR
+  # SONARR - TV Show Management
   # ===========================================
   sonarr:
-    image: lscr.io/linuxserver/sonarr:latest
+    image: lscr.io/linuxserver/sonarr:4.0.20.3014-ls5
     container_name: sonarr
     network_mode: "service:gluetun"
     environment:
       - PUID=0
       - PGID=0
-      - TZ=Etc/UTC
+      - TZ=${TZ}
     volumes:
-      - ./sonarr/config:/config
-      - ./tv:/tv
-      - ./downloads/complete:/downloads
+      - /mnt/truenas/Config/sonarr:/config
+      - /data:/data
     restart: unless-stopped
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
 
   # ===========================================
-  # PROWLARR
+  # PROWLARR - Indexer Manager
   # ===========================================
   prowlarr:
-    image: lscr.io/linuxserver/prowlarr:latest
+    image: lscr.io/linuxserver/prowlarr:2.7.0.5723-ls168
     container_name: prowlarr
     network_mode: "service:gluetun"
     environment:
       - PUID=0
       - PGID=0
-      - TZ=Etc/UTC
+      - TZ=${TZ}
     volumes:
-      - ./prowlarr/config:/config
+      - /mnt/truenas/Config/prowlarr:/config
     restart: unless-stopped
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
 
   # ===========================================
-  # BAZARR
+  # BAZARR - Subtitle Management
   # ===========================================
   bazarr:
-    image: lscr.io/linuxserver/bazarr:latest
+    image: lscr.io/linuxserver/bazarr:v1.6.2-ls372
     container_name: bazarr
     network_mode: "service:gluetun"
     environment:
       - PUID=0
       - PGID=0
-      - TZ=Etc/UTC
+      - TZ=${TZ}
     volumes:
-      - ./bazarr/config:/config
-      - ./movies:/movies
-      - ./tv:/tv
+      - /mnt/truenas/Config/bazarr:/config
+      - /data:/data
     restart: unless-stopped
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
 
   # ===========================================
-  # LIDARR
+  # LIDARR - Music Management
   # ===========================================
   lidarr:
-    image: lscr.io/linuxserver/lidarr:latest
+    image: lscr.io/linuxserver/lidarr:3.1.6.5079-ls48
     container_name: lidarr
     network_mode: "service:gluetun"
     environment:
       - PUID=0
       - PGID=0
-      - TZ=Etc/UTC
+      - TZ=${TZ}
     volumes:
-      - ./lidarr/config:/config
-      - ./music:/music
-      - ./downloads/complete:/downloads
+      - /mnt/truenas/Config/lidarr:/config
+      - /data:/data
     restart: unless-stopped
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
 
   # ===========================================
-  # QBITTORRENT
+  # QBITTORRENT - Torrent Client
   # ===========================================
   qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:latest
+    image: lscr.io/linuxserver/qbittorrent:5.3.0_v2.1.2-ls487
     container_name: qbittorrent
     network_mode: "service:gluetun"
     environment:
       - PUID=0
       - PGID=0
-      - TZ=Etc/UTC
+      - TZ=${TZ}
       - WEBUI_PORT=8080
       - TORRENTING_PORT=6881
     volumes:
-      - ./qbittorrent/config:/config
-      - ./downloads/incomplete:/downloads/incomplete
-      - ./downloads/complete:/downloads/complete
+      - /mnt/truenas/Config/qbittorrent:/config
+      - /data:/data
     restart: unless-stopped
     depends_on:
-      - gluetun
+      gluetun:
+        condition: service_healthy
 
   # ===========================================
-  # JELLYFIN
+  # FLARESOLVERR - Cloudflare challenge solver for Prowlarr (via VPN)
+  # ===========================================
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:v3.5.2
+    container_name: flaresolverr
+    network_mode: "service:gluetun"
+    environment:
+      - LOG_LEVEL=info
+      - TZ=${TZ}
+    restart: unless-stopped
+    depends_on:
+      gluetun:
+        condition: service_healthy
+
+  # ===========================================
+  # SYNCTHING - Obsidian vault sync (NOT via VPN; reached over LAN/Tailscale)
+  # ===========================================
+  syncthing:
+    image: lscr.io/linuxserver/syncthing:v2.1.7-ls237
+    container_name: syncthing
+    hostname: homelab-syncthing
+    networks:
+      - traefik-net
+    ports:
+      - 22000:22000/tcp   # sync protocol (LAN + Tailscale subnet route)
+      - 22000:22000/udp   # sync protocol (QUIC)
+    environment:
+      - PUID=3000
+      - PGID=3000
+      - TZ=${TZ}
+    volumes:
+      - /mnt/truenas/Config/syncthing:/config   # local disk (Syncthing DB must not be on NFS)
+      - /obsidian:/obsidian                      # NFS: datastore/isaac/Obsidian
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.syncthing.rule=Host(`syncthing.lab.${DOMAIN}`)"
+      - "traefik.http.routers.syncthing.entrypoints=websecure"
+      - "traefik.http.routers.syncthing.tls.certresolver=letsencrypt"
+      - "traefik.http.services.syncthing.loadbalancer.server.port=8384"
+
+  # ===========================================
+  # JELLYFIN - Media Server (Family Access)
   # ===========================================
   jellyfin:
-    image: lscr.io/linuxserver/jellyfin:latest
+    image: lscr.io/linuxserver/jellyfin:12.4ubu2604-ls59
     container_name: jellyfin
+    devices:
+      - /dev/dri:/dev/dri
     networks:
       - traefik-net
     environment:
       - PUID=0
       - PGID=0
-      - TZ=Etc/UTC
+      - TZ=${TZ}
     volumes:
-      - ./jellyfin/config:/config
-      - ./tv:/data/tvshows
-      - ./movies:/data/movies
+      - /mnt/truenas/Config/jellyfin:/config
+      - /data/media:/data/media:ro
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.jellyfin.rule=Host(`media.example.lab`)"
+      - "traefik.http.routers.jellyfin.rule=Host(`media.${DOMAIN}`)"
       - "traefik.http.routers.jellyfin.entrypoints=websecure"
       - "traefik.http.routers.jellyfin.tls.certresolver=letsencrypt"
       - "traefik.http.services.jellyfin.loadbalancer.server.port=8096"
+
+  # ===========================================
+  # DIUN - weekly "new image tag" email (no auto-updates, no docker.sock)
+  # ===========================================
+  diun:
+    image: docker.io/crazymax/diun:4.33.1
+    container_name: diun
+    hostname: homelab-diun
+    command: serve
+    environment:
+      - TZ=${TZ}
+      - LOG_LEVEL=info
+    volumes:
+      - /mnt/truenas/Config/diun/diun.yml:/diun.yml:ro
+      - /mnt/truenas/Config/diun/images.yml:/etc/diun/images.yml:ro
+      - /mnt/truenas/Config/diun/smtp_user:/etc/diun/smtp_user:ro
+      - /mnt/truenas/Config/diun/smtp_pass:/etc/diun/smtp_pass:ro
+      - /mnt/truenas/Config/diun/data:/data
+    restart: unless-stopped

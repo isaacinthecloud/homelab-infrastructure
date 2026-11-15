@@ -16,8 +16,8 @@ This document details the ZFS pool configuration for the TrueNAS homelab storage
 |Disk Size|14TB (12.7T usable per disk)|
 |Total Raw Capacity|38.2T|
 |Usable Capacity|~25.4T (after RAIDZ1 overhead)|
-|Current Allocation|2.03T|
-|Free Space|23.3T|
+|Current Allocation|~3.1T (Nov 2026)|
+|Free Space|~22.2T|
 |Compression|lz4|
 |Deduplication|Off|
 |Atime|Off|
@@ -41,9 +41,9 @@ datastore (38.2T)
 |
 +-- raidz1-0
     |
-    +-- sdb (12.7T) - ST14000NM005G-2KG133 [Serial: ZTM09FD7]
-    +-- sdc (12.7T) - ST14000NM005G-2KG133 [Serial: ZLM2BF4E]
-    +-- sdd (12.7T) - ST14000NM005G-2KG133 [Serial: ZTM093QT]
+    +-- sdb (12.7T) - ST14000NM005G-2KG133
+    +-- sdc (12.7T) - ST14000NM005G-2KG133
+    +-- sdd (12.7T) - ST14000NM005G-2KG133
 ```
 
 ### Boot Pool
@@ -57,96 +57,61 @@ boot-pool (19G)
 
 ### Storage Disks
 
-|Device|Model|Capacity|Serial Number|Purpose|
-|---|---|---|---|---|
-|sdb|ST14000NM005G-2KG133|14TB|ZTM09FD7|Datastore RAIDZ1|
-|sdc|ST14000NM005G-2KG133|14TB|ZLM2BF4E|Datastore RAIDZ1|
-|sdd|ST14000NM005G-2KG133|14TB|ZTM093QT|Datastore RAIDZ1|
-|sda|QEMU HARDDISK|20G|drive-scsi0|Boot device (VM)|
+|Device|Model|Capacity|Purpose|
+|---|---|---|---|
+|sdb|ST14000NM005G-2KG133|14TB|Datastore RAIDZ1|
+|sdc|ST14000NM005G-2KG133|14TB|Datastore RAIDZ1|
+|sdd|ST14000NM005G-2KG133|14TB|Datastore RAIDZ1|
+|sda|QEMU HARDDISK|20G|Boot device (VM)|
+
+Serial numbers are intentionally omitted from this public repository.
 
 **Note:** Model ST14000NM005G is Seagate Exos X14 - 14TB Enterprise HDD (7200 RPM, 256MB cache, 12Gb/s SAS)
 
 ## Dataset Hierarchy
 
-Based on actual `zfs list -r datastore` output:
+Current layout (`zfs list -r datastore`, system datasets omitted). The original `Movies`, `TV_Shows` and `Music` datasets were removed in November 2026 (they were empty) and replaced by a single `data` dataset so the media apps can hardlink instead of copy.
 
 ```
 datastore/
 |
-+-- .system/                           # System datasets (legacy)
-|   |
-|   +-- configs-ae32c386e13840b2bf9c0083275e7941/
-|   +-- cores/
-|   +-- netdata-ae32c386e13840b2bf9c0083275e7941/
-|   +-- nfs/
-|   +-- samba4/
-|
-+-- Movies/                            # Movie media files
-+-- Music/                             # Music media files
-+-- NAS/                               # General NAS storage
-|   |
-|   +-- nas/                           # NAS subdirectory (2.03T used)
-|
-+-- TV_Shows/                          # TV show media files
++-- data/            # media/ + torrents/ on ONE filesystem (hardlinks)   NFS -> Proxmox host
++-- isaac/           # personal files                                    SMB
+|   +-- Obsidian/    #   (folder) Obsidian vault for Syncthing           NFS -> Proxmox host
++-- mio/             # second household member                           SMB
++-- NAS/
+|   +-- nas          # 2TB zvol                                          iSCSI
++-- backups/
+    +-- proxmox/     # vzdump guest backups + host config archives       NFS -> Proxmox host
+    +-- laptop/      # restic repository (encrypted)                     SFTP
 ```
-
-### Dataset Details
-
-|Dataset|Used|Available|Refer|Mountpoint|
-|---|---|---|---|---|
-|datastore|2.03T|23.3T|128K|/mnt/datastore|
-|datastore/.system|1.84G|23.3T|1.47G|legacy|
-|datastore/.system/configs-*|26.2M|23.3T|26.2M|legacy|
-|datastore/.system/cores|128K|1024M|128K|legacy|
-|datastore/.system/netdata-*|356M|23.3T|356M|legacy|
-|datastore/.system/nfs|165K|23.3T|165K|legacy|
-|datastore/.system/samba4|261K|23.3T|261K|legacy|
-|datastore/Movies|128K|23.3T|128K|/mnt/datastore/Movies|
-|datastore/Music|128K|23.3T|128K|/mnt/datastore/Music|
-|datastore/NAS|2.03T|23.3T|128K|/mnt/datastore/NAS|
-|datastore/NAS/nas|2.03T|24.0T|1.35T|-|
-|datastore/TV_Shows|128K|23.3T|128K|/mnt/datastore/TV_Shows|
 
 ## Dataset Properties
 
-**Current Configuration:**
-- Most datasets use default 128K recordsize
-- All datasets inherit lz4 compression from pool
-- System datasets are marked as "legacy" mountpoints
-- Primary data is stored in datastore/NAS/nas (2.03T)
-
-**Recommended Optimizations:**
-
-|Dataset|Recommended Record Size|Compression|Quota|Purpose|
-|---|---|---|---|---|
-|datastore/Movies|1M|lz4|None|Large sequential video files|
-|datastore/TV_Shows|1M|lz4|None|Large sequential video files|
-|datastore/Music|128K|lz4|None|Smaller audio files|
-|datastore/NAS|128K|lz4|None|Mixed general purpose|
+|Dataset|Record Size|Compression|Why|
+|---|---|---|---|
+|datastore/data|1M|lz4|Large sequential media files and downloads|
+|datastore/isaac|128K|lz4|Mixed personal files|
+|datastore/mio|128K|lz4|Mixed personal files|
+|datastore/NAS|128K|lz4|Container for the iSCSI zvol|
+|datastore/backups|1M|lz4|Large backup archives and restic pack files|
 
 ### Record Size Recommendations
 
 - **128K (default)** - General purpose, mixed workloads
-- **1M** - Large sequential files (movies, TV shows, ISOs)
+- **1M** - Large sequential files (media, backups, ISOs)
 - **16K** - Databases (if hosting any)
 
-### Applying Optimizations
+### Why One `data` Dataset?
 
-```bash
-# Optimize for large video files
-zfs set recordsize=1M datastore/Movies
-zfs set recordsize=1M datastore/TV_Shows
-
-# Keep default for general storage
-# (datastore/Music and datastore/NAS already use 128K default)
-```
+A hardlink can't cross a filesystem boundary, and every ZFS dataset is its own filesystem. With downloads and libraries in separate datasets, every import is a full copy (twice the space, minutes of I/O). With both under `datastore/data`, an import is an instant hardlink and the torrent keeps seeding from the same blocks.
 
 ## RAIDZ1 Configuration Notes
 
 ### Redundancy
 - **Parity Disks:** 1
 - **Fault Tolerance:** Can survive 1 disk failure
-- **Usable Capacity:** (N-1) Ã— Disk Size = 2 Ã— 14TB â‰ˆ 25.4T usable
+- **Usable Capacity:** (N-1) × Disk Size = 2 × 14TB ≈ 25.4T usable
 
 ### Performance Characteristics
 - **Read Performance:** Excellent (parallelized across all disks)
@@ -155,7 +120,7 @@ zfs set recordsize=1M datastore/TV_Shows
 - **Risk Window:** Extended rebuilds increase URE (Unrecoverable Read Error) risk
 
 ### Capacity Planning
-- Current usage: 2.03T used / 23.3T available (8% utilization)
+- Current usage (Nov 2026): ~3.1T used / ~22.2T available (~12% utilization)
 - **Warning threshold:** 80% (recommend expansion/cleanup)
 - **Critical threshold:** 90% (performance degradation)
 
@@ -179,32 +144,25 @@ zfs set recordsize=1M datastore/TV_Shows
 
 ## Snapshot Policy
 
-**Status:** Configured via TrueNAS WebUI on January 28, 2026
+**Status:** Reviewed November 2026
 
-All datasets are configured with weekly snapshots to provide protection against accidental deletion and data corruption. Snapshots are retained for 4 weeks, providing a month-long recovery window.
+Snapshots protect against accidental deletion, ransomware-style overwrites from a client, and bad sync events. Retention is 4 weeks everywhere.
 
 ### Configured Snapshot Tasks
 
-|Dataset|Recursive|Schedule|Retention|Naming Schema|Status|
+|Dataset|Recursive|Schedule|Retention|Naming Schema|Why|
 |---|---|---|---|---|---|
-|datastore/NAS|Yes|Weekly at 04:00|4 weeks|auto-%Y-%m-%d_%H-%M|Enabled|
-|datastore/Movies|No|Weekly at 05:00|4 weeks|auto-%Y-%m-%d_%H-%M|Enabled|
-|datastore/TV_Shows|No|Weekly at 06:00|4 weeks|auto-%Y-%m-%d_%H-%M|Enabled|
-|datastore/Music|No|Weekly at 07:00|4 weeks|auto-%Y-%m-%d_%H-%M|Enabled|
+|datastore/NAS|Yes|Weekly, Sunday 04:00|4 weeks|auto-%Y-%m-%d_%H-%M|iSCSI zvol for the Windows PC|
+|datastore/isaac|No|Daily 00:00|4 weeks|auto-%Y-%m-%d_%H-%M|Personal files + Obsidian vault|
+|datastore/backups/laptop|No|Daily 04:30|4 weeks|auto-%Y-%m-%d_%H-%M|Protects the restic repo even if the laptop is compromised|
 
-### Schedule Details
-
-- **Frequency:** Weekly (every Sunday)
-- **Time Window:** 04:00-07:00 (4 AM - 7 AM)
-- **Staggered Start:** 1 hour between each dataset to distribute I/O load
-- **Retention:** 4 weeks (28 days) per dataset
-- **Total Snapshots:** Maximum of 4 snapshots per dataset at any time
+`datastore/data` is not snapshotted: media can be re-acquired, and snapshots would pin deleted media on disk.
 
 ### Storage Impact
 
 With current data patterns:
 - **Estimated overhead:** <5% of used space (snapshots store only changes)
-- **Current used space:** 2.03T
+- **Current used space:** ~3.1T (Nov 2026)
 - **Maximum snapshot overhead:** ~100GB (conservatively estimated)
 - **Impact on 23.3T available:** Negligible (<0.5%)
 
@@ -254,9 +212,9 @@ midclt call pool.snapshottask.query | jq '.[] | {dataset, enabled, state}'
 ### Notes
 
 - Recursive snapshots on datastore/NAS include the `/nas` subdirectory
-- Media datasets (Movies, TV_Shows, Music) use non-recursive snapshots (no subdirectories)
+- `datastore/isaac` and `datastore/backups/laptop` use non-recursive daily snapshots
 - System datasets (.system) managed automatically by TrueNAS
-- Snapshots are local only - consider offsite backups for critical data
+- Snapshots are local only - an off-site copy (e.g. TrueNAS Cloud Sync) is still a planned improvement
 
 ## Scrub Schedule
 
@@ -265,32 +223,30 @@ midclt call pool.snapshottask.query | jq '.[] | {dataset, enabled, state}'
 ### Current Schedule
 
 - **Pool:** datastore
-- **Frequency:** Monthly
-- **Next Run:** In 3 days (approximately February 1, 2026 at 00:00)
+- **Frequency:** Every 35 days (TrueNAS default threshold, checked nightly at 00:00)
 - **Purpose:** Verify data integrity and detect bit rot
 
 ### Scrub Configuration
 
 - **Schedule:** Monthly at 00:00 (midnight)
-- **Duration:** Typically 50-60 minutes for current 2.03T of data
+- **Duration:** About an hour per 2T of data
 - **Automatic:** Yes - runs automatically per schedule
 - **Notification:** Configured through TrueNAS alert system
 
 ### Last Scrub Results
 
 **Datastore Pool:**
-- **Date:** January 25, 2026 at 00:56:04
-- **Duration:** 56 minutes 3 seconds
+- **Date:** November 8, 2026
 - **Data Repaired:** 0 bytes
 - **Errors Found:** 0
-- **Status:** âœ“ Healthy
+- **Status:** ✓ Healthy
 
 **Boot Pool:**
 - **Date:** January 28, 2026 at 03:45:03
 - **Duration:** 2 seconds
 - **Data Repaired:** 0 bytes
 - **Errors Found:** 0
-- **Status:** âœ“ Healthy
+- **Status:** ✓ Healthy
 
 ### Scrub Impact
 
@@ -368,7 +324,7 @@ arc_summary.py  # If available
 ## Expansion Planning
 
 ### Current Situation
-- **Used:** 2.03T / 25.4T usable (8% utilization)
+- **Used:** ~3.1T / 25.4T usable (~12% utilization, Nov 2026)
 - **Available:** 23.3T
 ### Expansion Options
 
@@ -412,12 +368,12 @@ zpool status -v datastore
 - Disk model: Seagate Exos X14 14TB (ST14000NM005G-2KG133)
 
 **Disk Serials (CRITICAL - for RMA/replacement):**
-- Disk 1 (sdb): ZTM09FD7
-- Disk 2 (sdc): ZLM2BF4E
-- Disk 3 (sdd): ZTM093QT
+- Recorded privately (TrueNAS → Storage → Disks); omitted from this public repository
 
 **Import Command:**
 ```bash
+# Run INSIDE TrueNAS only. Never import this pool on the Proxmox host:
+# both systems would write to it and the pool would be corrupted.
 # If pool becomes unavailable, try:
 zpool import -f datastore
 
@@ -449,9 +405,9 @@ zpool import
 
 **For Sequential I/O (media serving):**
 ```bash
-# Increase recordsize for large files
-zfs set recordsize=1M datastore/Movies
-zfs set recordsize=1M datastore/TV_Shows
+# Large sequential files (already applied to these datasets)
+zfs set recordsize=1M datastore/data
+zfs set recordsize=1M datastore/backups
 ```
 
 **For Random I/O (databases, if any):**

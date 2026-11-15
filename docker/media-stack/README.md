@@ -6,29 +6,59 @@ The media stack consists of the ARR suite for automated media management, qBitto
 
 ## Components
 
-| Service     | Purpose                  | Port |
-|-------------|--------------------------|------|
-| Gluetun     | VPN container (NordVPN)  | -    |
-| Radarr      | Movie management         | 7878 |
-| Sonarr      | TV show management       | 8989 |
-| Prowlarr    | Indexer management       | 9696 |
-| qBittorrent | Torrent client           | 8080 |
-| Jellyfin    | Media server             | 8096 |
+| Service      | Purpose                         | Port | Network |
+|--------------|---------------------------------|------|---------|
+| Gluetun      | VPN container (NordVPN, OpenVPN) | -    | traefik-net |
+| Radarr       | Movie management                | 7878 | via Gluetun |
+| Sonarr       | TV show management              | 8989 | via Gluetun |
+| Lidarr       | Music management                | 8686 | via Gluetun |
+| Prowlarr     | Indexer management              | 9696 | via Gluetun |
+| Bazarr       | Subtitle management             | 6767 | via Gluetun |
+| FlareSolverr | Cloudflare challenge solver for Prowlarr | 8191 | via Gluetun |
+| qBittorrent  | Torrent client                  | 8080 | via Gluetun |
+| Jellyfin     | Media server                    | 8096 | traefik-net (no VPN) |
 
 ## Network Architecture
 
-- All ARR services and qBittorrent route traffic through the Gluetun VPN tunnel
+- All ARR services, FlareSolverr and qBittorrent share Gluetun's network namespace (`network_mode: service:gluetun`)
+- Their web UIs are published through Traefik labels on the Gluetun container
 - Jellyfin remains on the local network to provide fast, reliable streaming to household devices
 - Gluetun kill switch prevents any outbound traffic if the VPN tunnel disconnects
+- VPN apps only start once Gluetun reports healthy (`depends_on: condition: service_healthy`)
 
-## Storage Mounts
+## Storage Layout
 
-All containers mount shared storage from TrueNAS via NFS:
+Media and downloads live on **one** TrueNAS dataset (`datastore/data`, 1M recordsize), so completed downloads are imported as **instant hardlinks** instead of slow copies:
 
-- `/mnt/truenas/Config/*` — Application configuration data
-- `/mnt/truenas/Movies` — Movie library
-- `/mnt/truenas/TV_Shows` — TV library
-- `/mnt/truenas/Downloads` — Download staging area
+```
+/data
+├── torrents/          # qBittorrent downloads, one folder per category
+│   ├── movies/        #   category radarr
+│   ├── tv/            #   category tv-sonarr
+│   └── music/         #   category lidarr
+└── media/             # Libraries the *arr apps import into (hardlinks)
+    ├── movies/
+    ├── tv/
+    └── music/
+```
+
+| Container | Mount |
+|---|---|
+| Radarr, Sonarr, Lidarr, Bazarr, qBittorrent | `/data:/data` (same path everywhere, so hardlinks work) |
+| Jellyfin | `/data/media:/data/media:ro` (read-only) |
+| All apps | `/config` on the LXC's local disk (SQLite databases are kept off NFS) |
+
+The dataset reaches the containers in two steps: TrueNAS exports it over NFS **to the Proxmox host only**, and the host bind-mounts it into LXC 103 (`mp0: /mnt/pve/truenas-data,mp=/data`). Files are written as a single non-root NAS user (`mapall`), and a guard on the empty mount point prevents writes to local disk if the NFS share is down.
+
+## Hardware Transcoding
+
+The Proxmox host's Intel iGPU render node is passed into LXC 103 and then into Jellyfin (`/dev/dri`). Jellyfin uses Intel Quick Sync (QSV) for decode and HEVC encode with VPP tone mapping; an HEVC transcode uses ~20% of one CPU core.
+
+## Lessons Learned
+
+- **Stale VPN server list.** Gluetun's bundled NordVPN server list was over a year old and the tunnel never came up. Fix: persist `/gluetun`, run the updater once, and set `UPDATER_PERIOD=24h`.
+- **Start-order race.** See [systemd/README.md](../systemd/README.md).
+- **Jellyfin migration crash.** An upgrade left Jellyfin crash-looping on a database migration; the fix was a fresh config. This is one reason images are now pinned and updated deliberately.
 
 ## Screenshots
 

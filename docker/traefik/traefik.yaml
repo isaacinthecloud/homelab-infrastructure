@@ -1,3 +1,4 @@
+# Traefik static configuration (mounted read-only at /traefik.yml).
 api:
   dashboard: true
   insecure: false
@@ -18,7 +19,6 @@ entryPoints:
           to: websecure
           scheme: https
           permanent: true
-
   websecure:
     address: ":443"
 
@@ -27,7 +27,6 @@ providers:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
     network: traefik-net
-
   file:
     directory: /dynamic
     watch: true
@@ -39,7 +38,11 @@ certificatesResolvers:
       storage: /acme/acme.json
       dnsChallenge:
         provider: route53
-        delayBeforeCheck: 30
+        propagation:
+          # Internal resolvers can't see the public TXT record, so skip the
+          # local propagation check and just wait before asking Let's Encrypt.
+          delayBeforeChecks: 60s
+          disableChecks: true
         resolvers:
           - "1.1.1.1:53"
           - "8.8.8.8:53"

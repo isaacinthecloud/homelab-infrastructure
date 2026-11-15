@@ -1,0 +1,10 @@
+{"Rules":[
+ {"ID":"all-to-deep-archive-and-180d-history","Status":"Enabled","Filter":{},
+  "Transitions":[{"Days":0,"StorageClass":"DEEP_ARCHIVE"}],
+  "NoncurrentVersionExpiration":{"NoncurrentDays":180},
+  "AbortIncompleteMultipartUpload":{"DaysAfterInitiation":7},
+  "Expiration":{"ExpiredObjectDeleteMarker":true}},
+ {"ID":"zvol-streams-expire-190d","Status":"Enabled","Filter":{"Prefix":"zvol/"},
+  "Expiration":{"Days":190},
+  "NoncurrentVersionExpiration":{"NoncurrentDays":1}}
+]}

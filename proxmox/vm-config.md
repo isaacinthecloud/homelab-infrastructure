@@ -8,8 +8,8 @@ Full KVM virtual machines are used when LXC containers aren't suitable — speci
 
 |ID|Name|vCPU|RAM|Storage|Purpose|
 |---|---|---|---|---|---|
-|100|truenas|4|16GB|32GB + Passthrough|ZFS Storage Server|
-|104|dc01|4|8GB|20GB|Windows Domain Controller|
+|100|truenas|4|16GB (no ballooning)|20GB + Passthrough|ZFS Storage Server|
+|104|dc01|4|8GB|60GB|Windows Domain Controller|
 
 ## VM 100 — TrueNAS SCALE
 
@@ -23,25 +23,20 @@ Full KVM virtual machines are used when LXC containers aren't suitable — speci
 |BIOS|OVMF (UEFI)|
 |CPU|host (passthrough)|
 |vCPU|4 cores|
-|RAM|16GB|
+|RAM|16GB (ballooning off — ZFS ARC needs fixed memory)|
+|Boot|Startup order 3, then 120 s delay before the Docker LXC|
 |Network|VirtIO on vmbr0, VLAN 21|
 
 ### Disk Configuration
 
 |Disk|Type|Purpose|
 |---|---|---|
-|scsi0|Virtual disk (32GB)|TrueNAS OS|
-|hostpci0|PCIe Passthrough|SATA/SAS Controller|
+|scsi0|Virtual disk (20GB, SSD emulation, discard, iothread)|TrueNAS OS (boot-pool)|
+|hostpci0|PCIe Passthrough (`0000:00:17`)|Onboard SATA AHCI controller (3 data disks)|
 
 ### PCIe Passthrough Setup
 
-The SATA controller is passed through directly to TrueNAS for optimal ZFS performance.
-
-**GRUB Configuration (`/etc/default/grub`):**
-
-```bash
-GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on iommu=pt"
-```
+The onboard SATA controller is passed through directly to TrueNAS for optimal ZFS performance. The host itself boots from NVMe, so it never needs the SATA controller. Full write-up: [truenas/disk-passthrough.md](../truenas/disk-passthrough.md).
 
 **VFIO Modules (`/etc/modules`):**
 
@@ -52,18 +47,23 @@ vfio_pci
 vfio_virqfd
 ```
 
-**Blacklist onboard drivers (`/etc/modprobe.d/blacklist.conf`):**
+**Claim the controller for vfio-pci at boot (`/etc/modprobe.d/vfio-truenas-sata.conf`):**
 
 ```
-blacklist ahci
-blacklist libahci
+options vfio-pci ids=8086:7a62
+softdep ahci pre: vfio-pci
 ```
+
+Then `update-initramfs -u -k all`. The IOMMU is on by default with this kernel, so no extra GRUB parameters are needed.
+
+**Host ZFS import disabled:** the host has no ZFS pools of its own, so `zfs-import-scan` and `zfs-import-cache` are masked. Before this, the host scanned TrueNAS's disks at every boot and found its pools; only ZFS's "pool in use by another system" check prevented an import.
 
 ### Network Configuration
 
 - Interface: VirtIO NIC
 - Bridge: vmbr0
 - VLAN: 21 (untagged)
+- Proxmox firewall bridge enabled
 - IP: Static (10.2.1.x/24)
 
 ## VM 104 — DC01 (Domain Controller)
@@ -76,11 +76,11 @@ blacklist libahci
 | ------------ | ------------------------ |
 | Machine Type | q35                      |
 | BIOS         | OVMF (UEFI)              |
-| CPU          | host                     |
+| CPU          | x86-64-v2-AES            |
 | vCPU         | 4 cores                  |
 | RAM          | 8GB                      |
-| Network      | VirtIO on vmbr0, VLAN 21 |
-| Disk         | 20GB VirtIO SCSI         |
+| Network      | e1000 on vmbr0, VLAN 21  |
+| Disk         | 60GB IDE                 |
 
 ### Use Cases
 

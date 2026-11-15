@@ -23,20 +23,9 @@ I enabled IOMMU support in the Proxmox host to allow PCI device passthrough:
 
 1. **BIOS Configuration** - Enabled Intel VT-d (or AMD-Vi for AMD systems)
 
-2. **GRUB Configuration** - Modified `/etc/default/grub`:
-   ```bash
-   GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on iommu=pt"
-   ```
-   
-   The `iommu=pt` parameter enables passthrough mode for better performance.
+2. **Kernel** - The Proxmox 6.8 kernel enables the Intel IOMMU by default, so no extra GRUB parameters are needed (`GRUB_CMDLINE_LINUX_DEFAULT="quiet"`). Older kernels needed `intel_iommu=on iommu=pt`.
 
-3. **Applied Changes:**
-   ```bash
-   update-grub
-   reboot
-   ```
-
-4. **Verified IOMMU Status:**
+3. **Verified IOMMU Status:**
    ```bash
    dmesg | grep -e DMAR -e IOMMU
    ```
@@ -54,20 +43,24 @@ vfio_virqfd
 
 These modules enable PCI device assignment to virtual machines.
 
-**Driver Blacklisting:**
+**Binding the Controller to vfio-pci at Boot:**
 
-To prevent Proxmox from claiming the SATA controller, I blacklisted the AHCI drivers in `/etc/modprobe.d/blacklist.conf`:
+Instead of blacklisting the AHCI driver for the whole host, I bind only this controller (PCI ID `8086:7a62`, the only one of its kind in the machine) to `vfio-pci`, and make sure `vfio-pci` loads before `ahci`. In `/etc/modprobe.d/vfio-truenas-sata.conf`:
 ```
-blacklist ahci
-blacklist libahci
+options vfio-pci ids=8086:7a62
+softdep ahci pre: vfio-pci
 ```
-
-This ensures the controller remains available for VM passthrough.
 
 **Finalized Configuration:**
 ```bash
 update-initramfs -u -k all
 reboot
+lspci -nnk -s 00:17.0   # "Kernel driver in use: vfio-pci" right after boot
+```
+
+**Why this mattered:** originally the controller was only handed to `vfio-pci` when the TrueNAS VM started. Until then the host's `ahci` driver owned it, could see the data disks, and `zfs-import-scan` found TrueNAS's pools at every boot. Only ZFS's "pool was previously in use from another system" check prevented the host from importing a pool that TrueNAS was about to use (which would corrupt it). Now the host never sees those disks, and because the host has no ZFS pools of its own, its ZFS import services are masked as a second safeguard:
+```bash
+systemctl mask zfs-import-scan.service zfs-import-cache.service
 ```
 
 ### IOMMU Group Verification
@@ -90,10 +83,10 @@ The controller was isolated in its own IOMMU group (or grouped only with related
 I configured the TrueNAS VM to use the passed-through controller by adding this line to `/etc/pve/qemu-server/<VMID>.conf`:
 
 ```
-hostpci0: 0000:00:1f.2,pcie=1
+hostpci0: 0000:00:17
 ```
 
-The `pcie=1` parameter enables PCIe mode for better performance and feature support.
+The VM uses the q35 machine type with OVMF (UEFI) firmware.
 
 ## Verification
 
@@ -101,7 +94,7 @@ After booting the TrueNAS VM, I verified successful passthrough:
 
 - **Storage > Disks** shows all three physical Seagate Exos X14 drives
 - SMART data is accessible for health monitoring
-- Disk serial numbers are visible (ZTM09FD7, ZLM2BF4E, ZTM093QT)
+- Disk serial numbers and models are visible to TrueNAS (omitted here)
 - ZFS can directly manage the disks without abstraction layers
 
 ## Results

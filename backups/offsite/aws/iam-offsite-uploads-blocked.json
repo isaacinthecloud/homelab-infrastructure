@@ -1,0 +1,2 @@
+{"Version":"2012-10-17","Statement":[{"Sid":"HardBlockOffsiteUploads","Effect":"Deny","Action":"s3:*",
+ "Resource":["arn:aws:s3:::example-homelab-offsite","arn:aws:s3:::example-homelab-offsite/*"]}]}

@@ -1,0 +1,14 @@
+#!/bin/bash
+# offsite-truenas-vm - upload the TrueNAS VM (VM 100) backups from local NVMe to AWS S3.
+# Runs from /etc/cron.d/offsite-truenas-vm after the weekly-truenas vzdump job.
+# Independent of TrueNAS on purpose: if the NAS is lost, its VM can be restored from S3.
+# Encrypted with rclone crypt (remote "offsite" in /root/.config/rclone/rclone.conf),
+# stored as DEEP_ARCHIVE under pve/truenas-vm. Deleted local files stay in S3 history 180 days.
+# Prints nothing on success; any output is mailed to root (forwarded to email via SES).
+set -euo pipefail
+src=/var/lib/vz/dump
+ls "$src"/vzdump-qemu-100-*.vma.zst >/dev/null 2>&1 || { echo "offsite-truenas-vm: no VM 100 backup found in $src"; exit 1; }
+rclone sync "$src" offsite:truenas-vm \
+    --include "vzdump-qemu-100-*" \
+    --s3-chunk-size 64M --bwlimit "00:00,off 07:00,6250000b" \
+    --log-level ERROR

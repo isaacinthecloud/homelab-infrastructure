@@ -1,0 +1,10 @@
+# Secrets and local state - never commit
+.env
+*.env
+!.env.example
+*.secret
+*.key
+*.pem
+acme.json
+smtp_user
+smtp_pass

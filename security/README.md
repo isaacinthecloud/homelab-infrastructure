@@ -36,3 +36,38 @@ Firewall rules enforce strict inter-VLAN access controls on the Ubiquiti Cloud G
 
 All internal services use HTTPS via Traefik with Let's Encrypt certificates.  
 Certificates are issued using the DNS-01 challenge through Route53, avoiding the need for inbound HTTP/HTTPS ports.
+
+## Access Hardening
+
+| Area | Control |
+|---|---|
+| TrueNAS SSH | Key-only login, weak ciphers (AES128-CBC, NONE) disabled, host keys rotated |
+| Homelab admin access | One dedicated SSH key, restricted server-side to a single client IP (`from=`) |
+| Backup account | SFTP-only NAS user: no shell, no password, `restrict`-ed key, one directory |
+| NFS | Each export allows only the Proxmox host; container root is mapped to an ordinary NAS user |
+| Hypervisor | Host never touches the NAS disks (controller bound to `vfio-pci` at boot; host ZFS auto-import masked) |
+
+## Secrets Management
+
+- Container secrets live in `/root/docker/.env` (mode 600); the compose file contains only `${VARIABLE}` references
+- This repository contains placeholders only (`example.com`, `10.2.1.x`, `.env.example`), and `.gitignore` blocks `.env`, keys and ACME state
+- Notification credentials are passed into each system from a root-only file and never written to documentation
+
+## Cloud (AWS) Least Privilege
+
+| IAM identity | Can do |
+|---|---|
+| Traefik DNS-01 user | Read Route 53 zones, change records — nothing else |
+| SES SMTP user | `ses:SendRawEmail`, only as the alert address; SES kept in sandbox (200/day, verified recipients only) |
+| Off-site uploaders (TrueNAS, Proxmox) | Write only their own S3 prefix, Deep Archive only; no version deletion, no thaw, no bucket changes; auto-blocked at $15/month |
+| Temporary setup users | Created per task with a scoped policy, deleted afterwards |
+
+Spend is watched by a $5 budget and Cost Anomaly Detection (see [monitoring](../monitoring/README.md)).
+
+## Email Authentication
+
+The domain publishes DKIM (Microsoft 365 and SES), SPF and a DMARC policy (currently `p=none` with reporting, moving to `quarantine`) so alert mail is delivered and the domain is harder to spoof.
+
+## Patch Management
+
+Updates are applied in planned sessions following [docs/maintenance.md](../docs/maintenance.md). Container images are pinned and updated after review; Diun reports new versions weekly.

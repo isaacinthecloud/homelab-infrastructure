@@ -2,23 +2,27 @@
 
 ## Overview
 
-Docker runs in LXC 103 on Proxmox, hosting all containerized applications including the Traefik reverse proxy, media stack, and supporting services.
+Docker runs in LXC 103 on Proxmox, hosting all containerized applications including the Traefik reverse proxy, media stack, file sync and supporting services.
 
 ## Host Configuration
 
-| Component | Details               |
-| --------- | --------------------- |
-| LXC ID    | 103                   |
-| vCPU      | 2                     |
-| RAM       | 2 GB                  |
-| Storage   | 16 GB                 |
-| Network   | VLAN 21 (10.2.1.x/24) |
+| Component | Details |
+| --------- | ------- |
+| LXC ID    | 103 (privileged — needed for NFS bind mounts and GPU access) |
+| vCPU      | 2 |
+| RAM       | 4 GB |
+| Storage   | 32 GB root disk (container configs live here) |
+| GPU       | Intel iGPU render node `/dev/dri/renderD128` passed through (Jellyfin Quick Sync) |
+| Mounts    | `/data` (media + downloads), `/obsidian` (vault) — NFS from TrueNAS, mounted on the Proxmox host and bind-mounted in |
+| Network   | VLAN 21 (10.2.1.x/24), fixed DHCP reservation |
+| Boot      | Starts last (startup order 4), after AdGuard, Tailscale and TrueNAS |
 
 ## Container Stack
 
 ### Core Infrastructure
-- **Traefik** — Reverse proxy with automatic SSL
+- **Traefik** — Reverse proxy with automatic SSL ([details](traefik/README.md))
 - **Portainer** — Container management UI
+- **Diun** — Weekly email when a newer image version exists ([details](diun/README.md))
 
 ### Media Stack (via Gluetun VPN)
 - **Radarr** — Movie management
@@ -26,33 +30,47 @@ Docker runs in LXC 103 on Proxmox, hosting all containerized applications includ
 - **Lidarr** — Music management
 - **Prowlarr** — Indexer management
 - **Bazarr** — Subtitle management
+- **FlareSolverr** — Solves Cloudflare challenges for Prowlarr
 - **qBittorrent** — Torrent client
 
 ### Media Server
-- **Jellyfin** — Media streaming server for local household access
+- **Jellyfin** — Media streaming server for local household access, hardware transcoding via Intel Quick Sync
+
+### File Sync
+- **Syncthing** — Obsidian vault sync between laptop, desktop and phone, with the NAS as the always-on copy ([details](syncthing/README.md))
 
 ## Docker Compose
 
 The homelab is orchestrated using **Docker Compose**, which provides several advantages over running individual containers manually:
 
-1. **Multi-Container Management**  
-	Docker Compose allows defining all services, networks, volumes, and dependencies in a single `docker-compose.yml` file. This ensures the **entire stack can be started, stopped, or rebuilt consistently** with a single command: `docker-compose up -d`
-2. **Networking and Isolation**  
+1. **Multi-Container Management**
+	All services, networks, volumes, and dependencies are defined in a single compose file, so the **entire stack can be started, stopped, or rebuilt consistently** with `docker compose up -d`.
+2. **Networking and Isolation**
 	Compose defines custom networks (e.g., `traefik-net`) to **control which containers can communicate**. This works alongside Gluetun to ensure media services route traffic through a VPN while the rest of the infrastructure remains on the local network.
-3. **Reproducibility and Versioning**  
-    All containers, images, and configuration paths are versioned in the compose file. This makes the stack **easy to replicate**, update, or restore after maintenance.
-4. **Dependency Management**  
-    Services like Radarr, Sonarr, and qBittorrent are defined to depend on Gluetun. Compose ensures that containers start in the correct order, avoiding network or service errors.
-5. **Security**  
-    Compose supports features like:
-    - `network_mode: service:gluetun` for VPN isolation
-    - `security_opt: no-new-privileges:true`
-    - Labels for Traefik routing and HTTPS with TLS certs
+3. **Reproducibility and Versioning**
+	Every image is **pinned to an exact version tag** (no `:latest`). The compose file documents exactly what runs, and rolling back is a one-line tag change.
+4. **Dependency Management**
+	VPN-routed services use `depends_on: gluetun: condition: service_healthy`, so they only start once the VPN tunnel is up.
+5. **Security**
+	- `network_mode: service:gluetun` for VPN isolation
+	- `security_opt: no-new-privileges:true`
+	- Labels for Traefik routing and HTTPS with TLS certs
+	- Secrets only in `.env` (mode 600, git-ignored); the compose file holds `${VARIABLE}` references
 
-### Reference File
+### Reference Files
 
-The **sanitized Docker Compose file** used for this stack is included in the repository:
+- [docker-compose.yaml](docker-compose.yaml) — sanitized copy of the live compose file
+- [.env.example](.env.example) — every variable the compose file expects, with placeholder values
+- [systemd/compose-stack.service](systemd/compose-stack.service) — boot-time fix for the Gluetun start-order race ([why](systemd/README.md))
 
-[docker-compose.yml](docker-compose.yml)
+> All secrets, credentials and the real domain are supplied through `.env` and are not in this repository.
 
-> This file is safe for educational purposes: all secrets, credentials, and domains have been replaced with placeholders. It demonstrates best practices for multi-container orchestration, network isolation, and VPN routing in a homelab environment.
+## Update Process
+
+Images are updated deliberately, not automatically:
+
+1. Diun emails that a new version exists
+2. Read the release notes
+3. Edit the tag in `docker-compose.yml`, then `docker compose pull <service> && docker compose up -d <service>`
+
+See [docs/maintenance.md](../docs/maintenance.md) for the full update runbook, including the Docker engine itself.

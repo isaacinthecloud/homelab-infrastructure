@@ -1,0 +1,29 @@
+# Diun: weekly check for new tags of the pinned images (see images.yml).
+# Nothing is updated automatically; edit tags in /root/docker/docker-compose.yml.
+db:
+  path: /data/diun.db
+watch:
+  workers: 4
+  schedule: "0 8 * * 1"       # Mondays 08:00 (TZ from compose)
+  jitter: 30s
+  firstCheckNotif: false      # first run only records existing tags
+  runOnStartup: true
+defaults:
+  watchRepo: true
+  sortTags: semver
+  maxTags: 10
+  notifyOn: [new]
+providers:
+  file:
+    filename: /etc/diun/images.yml
+notif:
+  mail:
+    host: email-smtp.us-east-1.amazonaws.com
+    port: 587
+    ssl: false                # STARTTLS
+    insecureSkipVerify: false
+    usernameFile: /etc/diun/smtp_user
+    passwordFile: /etc/diun/smtp_pass
+    from: alerts@example.com
+    to:
+      - alerts@example.com

@@ -1,0 +1,35 @@
+# One entry per pinned compose image.
+# Tag-pattern entries: alert on a NEW tag matching the pin's style (semver-sortable tags only).
+# ':latest' entries: alert when the floating tag is UPDATED (4-part / odd version formats).
+- name: docker.io/library/traefik
+  include_tags: ['^v3\.\d+\.\d+$']
+- name: docker.io/portainer/portainer-ce
+  include_tags: ['^2\.\d+\.\d+$']
+- name: docker.io/qmcgaw/gluetun
+  include_tags: ['^v3\.\d+\.\d+$']
+- name: lscr.io/linuxserver/radarr:latest   # version tags don't sort; alert when :latest moves
+  watch_repo: false
+  notify_on: [update]
+- name: lscr.io/linuxserver/sonarr:latest   # version tags don't sort; alert when :latest moves
+  watch_repo: false
+  notify_on: [update]
+- name: lscr.io/linuxserver/prowlarr:latest   # version tags don't sort; alert when :latest moves
+  watch_repo: false
+  notify_on: [update]
+- name: lscr.io/linuxserver/lidarr:latest   # version tags don't sort; alert when :latest moves
+  watch_repo: false
+  notify_on: [update]
+- name: lscr.io/linuxserver/bazarr
+  include_tags: ['^v\d+\.\d+\.\d+-ls\d+$']
+- name: lscr.io/linuxserver/qbittorrent:latest   # version tags don't sort; alert when :latest moves
+  watch_repo: false
+  notify_on: [update]
+- name: lscr.io/linuxserver/syncthing
+  include_tags: ['^v\d+\.\d+\.\d+-ls\d+$']
+- name: lscr.io/linuxserver/jellyfin:latest   # version tags don't sort; alert when :latest moves
+  watch_repo: false
+  notify_on: [update]
+- name: ghcr.io/flaresolverr/flaresolverr
+  include_tags: ['^v\d+\.\d+\.\d+$']
+- name: docker.io/crazymax/diun
+  include_tags: ['^4\.\d+\.\d+$']

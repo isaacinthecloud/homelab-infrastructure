@@ -1,0 +1,17 @@
+# /root/.config/rclone/rclone.conf on the Proxmox host (root:root 600). Placeholders only.
+# Generate obscured values with:  echo -n 'secret' | rclone obscure -
+[s3]
+type = s3
+provider = AWS
+region = us-east-1
+access_key_id = AKIAXXXXXXXXXXXXXXXX
+secret_access_key = replace-me
+storage_class = DEEP_ARCHIVE
+no_check_bucket = true
+
+[offsite]
+type = crypt
+remote = s3:example-homelab-offsite/pve
+filename_encryption = standard
+password = <rclone-obscured passphrase>
+password2 = <rclone-obscured salt>

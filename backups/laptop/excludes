@@ -1,0 +1,17 @@
+# Paths are as seen inside the temporary snapshots.
+/.laptop-backup-snap/root/tmp
+/.laptop-backup-snap/root/var/tmp
+/.laptop-backup-snap/root/var/cache
+/.laptop-backup-snap/root/var/lib/docker
+/.laptop-backup-snap/root/swap
+/.laptop-backup-snap/home/*/.cache
+/.laptop-backup-snap/home/*/.local/share/Trash
+/.laptop-backup-snap/home/*/.local/share/Steam
+/.laptop-backup-snap/home/*/.local/share/mise/installs
+/.laptop-backup-snap/home/*/.npm/_cacache
+/.laptop-backup-snap/home/*/.cargo/registry
+/.laptop-backup-snap/home/*/.rustup/toolchains
+/.laptop-backup-snap/home/*/go/pkg/mod
+/.laptop-backup-snap/home/*/.var/app/*/cache
+**/node_modules
+**/__pycache__
