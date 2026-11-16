@@ -92,10 +92,6 @@ services:
       - /root/docker/gluetun:/gluetun
     networks:
       - traefik-net
-    ports:
-      # Torrent ports (direct access needed for peers)
-      - 6881:6881
-      - 6881:6881/udp
     environment:
       - VPN_SERVICE_PROVIDER=nordvpn
       - VPN_TYPE=openvpn

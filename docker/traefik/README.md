@@ -38,4 +38,4 @@ All sensitive values have been sanitized for inclusion in this repository.
 - HTTPS enforced with automatic HTTP → HTTPS redirects
 - No public port exposure required
 - Certificates automatically renewed via DNS challenge
-- The Route53 IAM user can only read zones and change DNS records — no other AWS access
+- The Route53 IAM user ([policy](iam-route53-acme.json)) can only create and delete `_acme-challenge.*` **TXT** records in the one hosted zone. It cannot change A, MX, SPF or DKIM records, or touch any other zone. Verified with the IAM policy simulator and a live test using the real key (challenge record accepted, any other name AccessDenied)

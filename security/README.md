@@ -57,12 +57,12 @@ Certificates are issued using the DNS-01 challenge through Route53, avoiding the
 
 | IAM identity | Can do |
 |---|---|
-| Traefik DNS-01 user | Read Route 53 zones, change records — nothing else |
+| Traefik DNS-01 user | Create/delete `_acme-challenge.*` TXT records in one hosted zone, list that zone, poll change status — nothing else ([policy](../docker/traefik/iam-route53-acme.json)) |
 | SES SMTP user | `ses:SendRawEmail`, only as the alert address; SES kept in sandbox (200/day, verified recipients only) |
 | Off-site uploaders (TrueNAS, Proxmox) | Write only their own S3 prefix, Deep Archive only; no version deletion, no thaw, no bucket changes; auto-blocked at $15/month |
 | Temporary setup users | Created per task with a scoped policy, deleted afterwards |
 
-Spend is watched by a $5 budget and Cost Anomaly Detection (see [monitoring](../monitoring/README.md)).
+Spend is watched by a $10/month budget and Cost Anomaly Detection (see [monitoring](../monitoring/README.md)).
 
 ## Email Authentication
 
