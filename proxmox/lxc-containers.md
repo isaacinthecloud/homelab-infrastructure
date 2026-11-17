@@ -12,7 +12,7 @@ LXC (Linux Containers) provide lightweight OS-level virtualization with lower ov
 | 102 | tailscale | 2    | 512MB | 8GB  | Unprivileged | VPN Subnet Router |
 | 103 | docker    | 2    | 4GB   | 32GB | Privileged   | Container Host    |
 
-All three start on boot and use the host's time zone.
+All three start on boot and use the host's time zone. APT sources are deb822 `.sources` files (`debian.sources`, plus `tailscale.sources` in 102 and `docker.sources` in 103).
 
 ## LXC 101 — AdGuard Home
 

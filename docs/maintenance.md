@@ -59,7 +59,12 @@ Done right after the host upgrade, one container at a time (AdGuard → Tailscal
    - Tailscale has `ip_forward = 1` and still advertises the subnet
    - Docker: all containers up, VPN egress correct, NFS bind mounts present, QSV works, Traefik routes respond
 
-AdGuard Home is a standalone binary in `/opt`, so apt doesn't touch it. Optional follow-ups: `apt modernize-sources` (converts to deb822 `.sources` files) and `apt autoremove`.
+AdGuard Home is a standalone binary in `/opt`, so apt doesn't touch it.
+
+**Follow-up cleanup (done the same night):**
+
+- `apt modernize-sources` converted `sources.list` and the Tailscale/Docker `.list` files to deb822 `.sources` files, keeping the originals as `*.bak`. Answering `n` at its prompt gives a dry run that prints what it would write. It only carries over the `signed-by` and `trusted` options. Docker's `arch=amd64` was **silently dropped**, so it was added back as `Architectures: amd64` in `docker.sources`
+- `apt autoremove` (check first with `apt-get -s autoremove`) removed only leftovers in the Docker LXC: `libassuan0`, `libpaper1`, and `slirp4netns`/`libslirp0` (rootless Docker helpers, not used here)
 
 ## 3. LXC Containers
 
@@ -98,3 +103,4 @@ docker compose up -d <service>
 | `pve8to9` failure: systemd-boot | Debian meta-package installed but never used (host boots with GRUB) | `apt remove systemd-boot` |
 | Microcode still old after the upgrade | `dist-upgrade` only upgrades installed packages | Install `intel-microcode` from `non-free-firmware` |
 | Debian 13 drops `/etc/sysctl.conf` | procps removes the `99-sysctl.conf` symlink | Keep sysctl settings in `/etc/sysctl.d/*.conf` |
+| `apt modernize-sources` dropped `arch=amd64` | It only converts `signed-by` and `trusted` options | Preview with `n` first; re-add other options by hand (`Architectures:`) |
