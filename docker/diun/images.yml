@@ -37,3 +37,7 @@
   include_tags: ['^0\.\d+\.\d+$']
 - name: ghcr.io/seerr-team/seerr
   include_tags: ['^v3\.\d+\.\d+$']
+- name: ghcr.io/immich-app/immich-server
+  include_tags: ['^v\d+\.\d+\.\d+$']
+- name: ghcr.io/immich-app/immich-machine-learning
+  include_tags: ['^v\d+\.\d+\.\d+-openvino$']

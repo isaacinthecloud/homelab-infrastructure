@@ -36,6 +36,7 @@ flowchart LR
 | `datastore/isaac` (personal files, Obsidian vault) | TrueNAS Cloud Sync, from a ZFS snapshot | `truenas/isaac` | Daily 01:00 |
 | `datastore/mio` | TrueNAS Cloud Sync, from a ZFS snapshot | `truenas/mio` | Daily 01:15 |
 | `datastore/backups` — laptop restic repo, Proxmox host config, TrueNAS config exports, weekly off-site guest set | TrueNAS Cloud Sync (nightly guest backups excluded) | `truenas/backups` | Daily 06:00 |
+| `datastore/photos` (Immich library + Immich's own DB dumps in `backups/`; regenerable `thumbs/`, `encoded-video/` excluded) | TrueNAS Cloud Sync, from a ZFS snapshot | `truenas/photos` | Daily 01:30 |
 | TrueNAS config (DB + secret seed) | [`truenas-config-export.sh`](truenas-config-export.sh) → `backups/truenas-config/` | via `truenas/backups` | Weekly, Sun 05:00 |
 | Core guests 101–103 | Proxmox job `weekly-offsite` → `backups/proxmox/offsite/` | via `truenas/backups` | Weekly, Sun 04:00 |
 | TrueNAS VM 100 | [`offsite-truenas-vm`](offsite-truenas-vm) on the Proxmox host — **not** through TrueNAS | `pve/truenas-vm` | Weekly, Sun 06:30 |

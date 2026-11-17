@@ -47,6 +47,7 @@ TrueNAS must be fully up before anything mounts its NFS shares. Startup order: A
 | `local-lvm` | LVM-thin | NVMe | Guest disks |
 | `truenas-data` | NFS 4.2 | `datastore/data` | Bind-mounted into LXC 103 as `/data` |
 | `truenas-obsidian` | NFS | `datastore/isaac/Obsidian` | Bind-mounted into LXC 103 as `/obsidian` |
+| `truenas-photos` | NFS | `datastore/photos` | Bind-mounted into LXC 103 as `/photos` (Immich) |
 | `truenas-backups` | NFS | `datastore/backups/proxmox` | Nightly guest backups, host config archives |
 | `truenas-offsite` | Directory (inside `truenas-backups`, refuses to write if unmounted) | `datastore/backups/proxmox/offsite` | Weekly core-guest set that TrueNAS uploads to S3 |
 

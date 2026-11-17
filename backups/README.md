@@ -43,7 +43,7 @@ vzdump: weekly-offsite
 
 **Why TrueNAS is backed up to the host, not to itself:** if TrueNAS is the thing that breaks, its backup must be reachable without it. Its data disks are passed-through hardware, so `vzdump` only captures the 20GB boot disk; the pool itself is protected by RAIDZ1, snapshots and scrubs.
 
-LXC 103's NFS bind mounts (`/data`, `/obsidian`) are excluded from its backup automatically, so the nightly job captures the container OS and app configs, not the media library.
+LXC 103's NFS bind mounts (`/data`, `/obsidian`, `/photos`) are excluded from its backup automatically, so the nightly job captures the container OS and app configs, not the media library.
 
 ## Proxmox Host Config
 

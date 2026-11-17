@@ -68,6 +68,7 @@ lxc.mount.entry: /dev/net/tun dev/net/tun none bind,create=file
 ```
 mp0: /mnt/pve/truenas-data,mp=/data          # media + downloads (NFS on the host)
 mp1: /mnt/pve/truenas-obsidian,mp=/obsidian  # Obsidian vault (NFS on the host)
+mp2: /mnt/pve/truenas-photos,mp=/photos      # Immich library (NFS on the host)
 dev0: /dev/dri/renderD128,gid=104            # Intel iGPU for Jellyfin Quick Sync
 ```
 

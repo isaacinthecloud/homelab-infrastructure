@@ -73,13 +73,13 @@ flowchart TB
 
     v101 --> c101["LXC 101 · AdGuard<br/>1 vCPU · 512 MB · unprivileged<br/>boot order 1"]
     v102 --> c102["LXC 102 · Tailscale<br/>2 vCPU · 512 MB · unprivileged · /dev/net/tun<br/>boot order 2"]
-    v103 --> c103["LXC 103 · Docker<br/>2 vCPU · 4 GB · privileged<br/>/data · /obsidian bind mounts · iGPU<br/>boot order 4"]
+    v103 --> c103["LXC 103 · Docker<br/>2 vCPU · 8 GB · privileged<br/>/data · /obsidian · /photos bind mounts · iGPU<br/>boot order 4"]
     f100 --> t100["tap100i0 → fwbr100i0"] --> vm100["VM 100 · TrueNAS<br/>4 vCPU · 16 GB<br/>SATA controller passthrough<br/>boot order 3 + 120 s"]
     f104 --> vm104["VM 104 · DC01<br/>AD lab (manual start)"]
 
     subgraph storage["Host storage"]
         nvme["NVMe · LVM-thin<br/>guest disks · local backups"]
-        nfs["NFS storages from TrueNAS<br/>truenas-data · truenas-obsidian · truenas-backups"]
+        nfs["NFS storages from TrueNAS<br/>truenas-data · truenas-obsidian · truenas-photos · truenas-backups"]
     end
     nfs -. "bind mounts" .-> c103
 ```
@@ -114,7 +114,7 @@ flowchart TB
     data -- "NFS (Proxmox host only)" --> pveh["Proxmox host"]
     isaac -- "NFS: Obsidian/" --> pveh
     bk -- "NFS: proxmox/" --> pveh
-    pveh -- "bind mounts" --> lxc["LXC 103<br/>/data · /obsidian"]
+    pveh -- "bind mounts" --> lxc["LXC 103<br/>/data · /obsidian · /photos"]
     isaac -- "SMB" --> clients["Laptop / desktop"]
     mio -- "SMB" --> clients
     zvol -- "iSCSI" --> winpc["Windows PC"]

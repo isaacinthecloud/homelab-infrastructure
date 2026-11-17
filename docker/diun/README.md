@@ -15,7 +15,7 @@ Every compose image is **pinned to an exact version**, so nothing changes on `do
 
 | Images | Strategy | Why |
 |---|---|---|
-| Traefik, Portainer, Gluetun, Bazarr, Syncthing, FlareSolverr, Trailarr, Seerr, Diun | Watch the repository for **new tags** matching the pinned tag's pattern (e.g. `^v3\.\d+\.\d+$`), newest 10 by semver | Tags sort correctly as versions |
+| Traefik, Portainer, Gluetun, Bazarr, Syncthing, FlareSolverr, Trailarr, Seerr, Immich, Diun | Watch the repository for **new tags** matching the pinned tag's pattern (e.g. `^v3\.\d+\.\d+$`), newest 10 by semver | Tags sort correctly as versions |
 | Radarr, Sonarr, Prowlarr, Lidarr, qBittorrent, Jellyfin | Watch the floating `:latest` tag and alert when its **digest changes** | Four-part / custom tag formats (`6.4.4.10685-ls326`, `12.4ubu2604-ls59`) don't sort as semver — sorting picked years-old tags |
 
 The second row was a lesson learned: after the first scan, every pinned tag was checked against the set Diun was actually watching, and six images were watching ancient tags.

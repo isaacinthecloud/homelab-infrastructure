@@ -10,10 +10,10 @@ Docker runs in LXC 103 on Proxmox, hosting all containerized applications includ
 | --------- | ------- |
 | LXC ID    | 103 (privileged — needed for NFS bind mounts and GPU access) |
 | vCPU      | 2 |
-| RAM       | 4 GB |
+| RAM       | 8 GB |
 | Storage   | 32 GB root disk (container configs live here) |
-| GPU       | Intel iGPU render node `/dev/dri/renderD128` passed through (Jellyfin Quick Sync) |
-| Mounts    | `/data` (media + downloads), `/obsidian` (vault) — NFS from TrueNAS, mounted on the Proxmox host and bind-mounted in |
+| GPU       | Intel iGPU render node `/dev/dri/renderD128` passed through (Jellyfin + Immich Quick Sync, Immich OpenVINO ML) |
+| Mounts    | `/data` (media + downloads), `/obsidian` (vault), `/photos` (Immich library) — NFS from TrueNAS, mounted on the Proxmox host and bind-mounted in |
 | Network   | VLAN 21 (10.2.1.x/24), fixed DHCP reservation |
 | Boot      | Starts last (startup order 4), after AdGuard, Tailscale and TrueNAS |
 
@@ -37,6 +37,9 @@ Docker runs in LXC 103 on Proxmox, hosting all containerized applications includ
 - **Jellyfin** — Media streaming server for local household access, hardware transcoding via Intel Quick Sync
 - **Trailarr** — Downloads trailers for Radarr/Sonarr titles as local files for Jellyfin (not via VPN)
 - **Seerr** — Request movies and shows with a Jellyfin login; approved requests go to Radarr/Sonarr (not via VPN)
+
+### Photos
+- **Immich** — Photo/video library with mobile backup at `photos.lab` (not via VPN). Server, OpenVINO machine learning on the iGPU, Valkey and Postgres; only the server joins `traefik-net`, the rest sit on a private `immich-net`. Library on NFS `datastore/photos` (`/photos`); Postgres on the container's local disk (Immich doesn't support its DB on network shares). DB password in `/root/docker/immich.env` ([example](immich.env.example))
 
 ### File Sync
 - **Syncthing** — Obsidian vault sync between laptop, desktop and phone, with the NAS as the always-on copy ([details](syncthing/README.md))

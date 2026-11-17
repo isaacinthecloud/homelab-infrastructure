@@ -16,6 +16,9 @@ networks:
   traefik-net:
     name: traefik-net
     driver: bridge
+  immich-net:
+    name: immich-net
+    driver: bridge
 
 services:
 
@@ -396,3 +399,81 @@ services:
       - "traefik.http.routers.seerr.entrypoints=websecure"
       - "traefik.http.routers.seerr.tls.certresolver=letsencrypt"
       - "traefik.http.services.seerr.loadbalancer.server.port=5055"
+
+  # ===========================================
+  # IMMICH - Photo library (NOT via VPN). Library on NFS datastore/photos (/photos),
+  # Postgres on local disk (network shares unsupported). Pins from upstream v3.4.1 compose.
+  # ===========================================
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:v3.4.1
+    container_name: immich_server
+    networks:
+      - traefik-net
+      - immich-net
+    env_file:
+      - /root/docker/immich.env        # DB_PASSWORD/POSTGRES_* (mode 600, not in repo; see immich.env.example)
+    environment:
+      - TZ=${TZ}
+      - DB_HOSTNAME=immich_postgres
+      - REDIS_HOSTNAME=immich_redis
+    volumes:
+      - /photos:/data                  # NFS: datastore/photos
+      - /etc/localtime:/etc/localtime:ro
+    devices:
+      - /dev/dri:/dev/dri              # QSV/VAAPI video transcoding (enable in Admin > Video Transcoding)
+    depends_on:
+      - immich-redis
+      - immich-postgres
+    restart: unless-stopped
+    healthcheck:
+      disable: false
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-net"
+      - "traefik.http.routers.immich.rule=Host(`photos.lab.${DOMAIN}`)"
+      - "traefik.http.routers.immich.entrypoints=websecure"
+      - "traefik.http.routers.immich.tls.certresolver=letsencrypt"
+      - "traefik.http.services.immich.loadbalancer.server.port=2283"
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:v3.4.1-openvino
+    container_name: immich_machine_learning
+    networks:
+      - immich-net
+    env_file:
+      - /root/docker/immich.env
+    environment:
+      - TZ=${TZ}
+      - MACHINE_LEARNING_MODEL_REVISION=v2
+    devices:
+      - /dev/dri:/dev/dri              # OpenVINO on the UHD 730 (shared with Jellyfin)
+    volumes:
+      - /mnt/truenas/Config/immich/model-cache:/cache
+    restart: unless-stopped
+    healthcheck:
+      disable: false
+
+  immich-redis:
+    image: docker.io/valkey/valkey:9@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
+    container_name: immich_redis
+    networks:
+      - immich-net
+    healthcheck:
+      test: redis-cli ping | grep -q PONG || exit 1
+    restart: unless-stopped
+
+  immich-postgres:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
+    container_name: immich_postgres
+    networks:
+      - immich-net
+    env_file:
+      - /root/docker/immich.env        # POSTGRES_PASSWORD/USER/DB
+    environment:
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+    volumes:
+      - /mnt/truenas/Config/immich/postgres:/var/lib/postgresql/data   # local disk (SSD)
+    shm_size: 128mb
+    restart: unless-stopped
+    healthcheck:
+      disable: false

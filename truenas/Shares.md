@@ -14,6 +14,7 @@ NFS is **only exported to the Proxmox host**. The host mounts each share as a Pr
 |---|---|---|---|
 |`/mnt/datastore/data`|Proxmox host only|mapall → NAS user (UID 3000)|LXC 103 `/data` (media + downloads)|
 |`/mnt/datastore/isaac/Obsidian`|Proxmox host only|mapall → NAS user (UID 3000)|LXC 103 `/obsidian` (Syncthing)|
+|`/mnt/datastore/photos`|Proxmox host only|mapall → NAS user (UID 3000)|LXC 103 `/photos` (Immich)|
 |`/mnt/datastore/backups/proxmox`|Proxmox host only|maproot → root|Proxmox backup storage|
 
 ### Why mapall?
