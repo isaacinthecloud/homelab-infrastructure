@@ -2,7 +2,7 @@
 
 ## Overview
 
-LXC (Linux Containers) provide lightweight OS-level virtualization with lower overhead than full VMs. Three containers run core services, all on Debian 12.
+LXC (Linux Containers) provide lightweight OS-level virtualization with lower overhead than full VMs. Three containers run core services, all on Debian 13 "trixie" (upgraded from Debian 12 in November 2026, see the [maintenance runbook](../docs/maintenance.md)).
 
 ## Container Summary
 
@@ -41,7 +41,7 @@ All three start on boot and use the host's time zone.
 **Key Settings:**
 - Unprivileged container
 - TUN device enabled (`/dev/net/tun`)
-- IP forwarding enabled
+- IP forwarding enabled in `/etc/sysctl.d/99-tailscale.conf` (`net.ipv4.ip_forward = 1`). Don't put it in `/etc/sysctl.conf`: Debian 13 no longer reads that file
 - Advertises 10.2.1.0/24 subnet
 
 **Special Configuration Required:**

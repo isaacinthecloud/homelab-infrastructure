@@ -46,7 +46,20 @@ Proxmox VE 8 reached end of life in August 2026: apt stops offering updates, so 
 
 Rollback: there is no in-place downgrade. Reinstall Proxmox VE 8, restore `/etc` and the protected guest backups. Unprotect those backups after a few days of stable running.
 
-The LXC containers are still on Debian 12, which is supported on Proxmox VE 9. Moving them to Debian 13 is a separate task.
+### Major upgrade: LXC containers Debian 12 → 13 (done November 2026)
+
+Done right after the host upgrade, one container at a time (AdGuard → Tailscale → Docker), checking each before moving on. Each service was down only for its container's reboot. Docker took a minute or two longer because dockerd restarts during the upgrade.
+
+1. **Back up:** `vzdump <ids> --protected 1` to the NAS
+2. **Check sysctl settings first.** Debian 13 removes the `/etc/sysctl.d/99-sysctl.conf` → `/etc/sysctl.conf` symlink, so anything in `/etc/sysctl.conf` silently stops applying at the next boot. The Tailscale container's `ip_forward` lived there, and without it the subnet route would break with no error. Move such settings to their own file in `/etc/sysctl.d/` before upgrading
+3. **Switch the repos:** `sed -i s/bookworm/trixie/g` in `sources.list` and the third-party `.list` files (Tailscale and Docker both publish trixie repos)
+4. **Upgrade** with `dist-upgrade`, keeping your own config files, then `pct reboot <id>`
+5. **Verify:**
+   - AdGuard resolves
+   - Tailscale has `ip_forward = 1` and still advertises the subnet
+   - Docker: all containers up, VPN egress correct, NFS bind mounts present, QSV works, Traefik routes respond
+
+AdGuard Home is a standalone binary in `/opt`, so apt doesn't touch it. Optional follow-ups: `apt modernize-sources` (converts to deb822 `.sources` files) and `apt autoremove`.
 
 ## 3. LXC Containers
 
@@ -84,3 +97,4 @@ docker compose up -d <service>
 | Proxmox VE 8 quietly end-of-life | EOL repos just stop offering updates; apt looks "up to date" | Track the Proxmox lifecycle table, not apt output |
 | `pve8to9` failure: systemd-boot | Debian meta-package installed but never used (host boots with GRUB) | `apt remove systemd-boot` |
 | Microcode still old after the upgrade | `dist-upgrade` only upgrades installed packages | Install `intel-microcode` from `non-free-firmware` |
+| Debian 13 drops `/etc/sysctl.conf` | procps removes the `99-sysctl.conf` symlink | Keep sysctl settings in `/etc/sysctl.d/*.conf` |
