@@ -60,6 +60,10 @@ Radarr and Sonarr both have a **Best Available** profile: WEB/HDTV/Bluray at 108
 
 Lidarr's **Best Available** accepts High Quality Lossy (MP3 V0/320, AAC-320, ...) and Lossless, upgrading until Lossless; it is the music root folder's default.
 
+## Subtitles (Bazarr)
+
+Language profile **English+Spanish** (en, es, es-419) is the default for movies and series. Sources need no accounts: embedded subtitles (already inside the file), Gestdown (TV), YIFY Subtitles (movies), Subtitulamos.tv and Subtis (Spanish). Podnapisi is gone from current Bazarr and TVsubtitles is forced off. OpenSubtitles.com is the best single source but needs a free account.
+
 ## Indexers (Prowlarr, public only)
 
 | Indexer | Use | Priority | Notes |
