@@ -310,6 +310,8 @@ services:
       - PUID=0
       - PGID=0
       - TZ=${TZ}
+      # Intel OpenCL runtime (current + legacy1) for HDR tone mapping; the image only ships the NVIDIA ICD
+      - DOCKER_MODS=linuxserver/mods:jellyfin-opencl-intel
     volumes:
       - /mnt/truenas/Config/jellyfin:/config
       - /data/media:/data/media:ro
