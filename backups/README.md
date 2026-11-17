@@ -9,7 +9,7 @@ Backups are layered so that each common failure has a recovery path that doesn't
 | Guest backups | LXC 101/102/103 + lab guests (`vzdump`, snapshot mode, zstd) | TrueNAS `datastore/backups/proxmox` (NFS) | Nightly 02:30 | 7 daily, 4 weekly, 6 monthly |
 | TrueNAS VM | VM 100 boot disk (data disks are passed through and excluded) | Proxmox host NVMe (`local`) — **not** onto TrueNAS itself | Weekly, Sunday 03:30 | Last 2 |
 | Proxmox host config | `/etc` (incl. `/etc/pve`, network, storage) + root's SSH keys | TrueNAS `backups/proxmox/host` | Weekly (cron) | Last 8 |
-| NAS data | ZFS snapshots of `isaac`, `NAS`, `backups/laptop` | Same pool | Daily / weekly | 4 weeks |
+| NAS data | ZFS snapshots of `isaac`, `photos`, `NAS`, `backups/laptop` | Same pool | Daily / weekly | 4 weeks |
 | Laptop | `/` and `/home` via restic | TrueNAS `datastore/backups/laptop` (SFTP) | Daily | 7 daily, 4 weekly, 6 monthly |
 | TrueNAS config | Config export incl. secret seed | `backups/truenas-config/` + offline copy before upgrades | Weekly (Sun 05:00) | Last 8 |
 | **Off-site** | Encrypted copies of all of the above + the iSCSI zvol | AWS S3 Glacier Deep Archive | Daily / weekly / monthly | 180 days of history |

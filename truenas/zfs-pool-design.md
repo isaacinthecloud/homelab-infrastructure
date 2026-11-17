@@ -212,9 +212,9 @@ midclt call pool.snapshottask.query | jq '.[] | {dataset, enabled, state}'
 ### Notes
 
 - Recursive snapshots on datastore/NAS include the `/nas` subdirectory
-- `datastore/isaac` and `datastore/backups/laptop` use non-recursive daily snapshots
+- `datastore/isaac`, `datastore/photos` (00:15, skips empty) and `datastore/backups/laptop` use non-recursive daily snapshots
 - System datasets (.system) managed automatically by TrueNAS
-- Snapshots are local only - an off-site copy (e.g. TrueNAS Cloud Sync) is still a planned improvement
+- Snapshots are local only; off-site copies are separate (see [backups/offsite](../backups/offsite/README.md))
 
 ## Scrub Schedule
 
