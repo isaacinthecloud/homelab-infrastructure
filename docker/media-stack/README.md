@@ -18,13 +18,14 @@ The media stack consists of the ARR suite for automated media management, qBitto
 | qBittorrent  | Torrent client                  | 8080 | via Gluetun |
 | Jellyfin     | Media server                    | 8096 | traefik-net (no VPN) |
 | Trailarr     | Downloads trailers for Radarr/Sonarr titles | 7889 | traefik-net (no VPN) |
+| Seerr        | Media requests (Jellyfin login) → Radarr/Sonarr | 5055 | traefik-net (no VPN) |
 
 ## Network Architecture
 
 - All ARR services, FlareSolverr and qBittorrent share Gluetun's network namespace (`network_mode: service:gluetun`)
 - Their web UIs are published through Traefik labels on the Gluetun container
 - Jellyfin remains on the local network to provide fast, reliable streaming to household devices
-- Trailarr also stays off the VPN (YouTube blocks most VPN exit IPs) and reaches Radarr/Sonarr at `http://gluetun:7878` / `http://gluetun:8989`
+- Trailarr also stays off the VPN (YouTube blocks most VPN exit IPs) and reaches Radarr/Sonarr at `http://gluetun:7878` / `http://gluetun:8989`; Seerr does the same and talks to Jellyfin at `http://jellyfin:8096`
 - Gluetun kill switch prevents any outbound traffic if the VPN tunnel disconnects
 - VPN apps only start once Gluetun reports healthy (`depends_on: condition: service_healthy`)
 
@@ -56,6 +57,23 @@ The dataset reaches the containers in two steps: TrueNAS exports it over NFS **t
 ## Quality Profiles
 
 Radarr and Sonarr both have a **Best Available** profile: WEB/HDTV/Bluray at 1080p and 2160p plus Remuxes, upgrades enabled, cutoff at Remux-2160p (Sonarr: Bluray-2160p Remux). No custom formats.
+
+Lidarr's **Best Available** accepts High Quality Lossy (MP3 V0/320, AAC-320, ...) and Lossless, upgrading until Lossless; it is the music root folder's default.
+
+## Indexers (Prowlarr, public only)
+
+| Indexer | Use | Priority | Notes |
+|---|---|---|---|
+| SubsPlease | Anime | 10 | |
+| Nyaa.si | Anime | 15 | |
+| Anime Tosho | Anime | 20 | Aggregates Nyaa, Tokyo Toshokan and others |
+| Knaben | General incl. music | 25 | Meta-search over many trackers |
+| The Pirate Bay | General | 25 | Via the apibay API |
+| 1337x | General | 25 | FlareSolverr |
+| EZTV | TV | 25 | FlareSolverr |
+| Internet Archive | Public-domain content | 25 | |
+
+Left out on purpose: YTS (heavily compressed encodes and no custom formats to filter them), LimeTorrents / Torrent Downloads / Uindex (mostly duplicates of Knaben, more fakes). Prowlarr syncs everything to Radarr, Sonarr and Lidarr (full sync); a lower priority number wins ties.
 
 ## Hardware Transcoding
 

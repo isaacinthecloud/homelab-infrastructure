@@ -138,6 +138,7 @@ flowchart TB
         jellyfin["Jellyfin :8096<br/>Intel Quick Sync<br/>/data/media (read-only)"]
         syncthing["Syncthing :8384<br/>sync :22000 tcp/quic<br/>/obsidian"]
         trailarr["Trailarr :7889<br/>trailers via YouTube"]
+        seerr["Seerr :5055<br/>requests, Jellyfin login"]
         subgraph vpn["Gluetun · NordVPN tunnel · kill switch"]
             gluetun["Gluetun<br/>health-checked"]
             radarr["Radarr :7878"]
@@ -155,6 +156,9 @@ flowchart TB
     traefik --> jellyfin
     traefik --> syncthing
     traefik --> trailarr
+    traefik --> seerr
+    seerr -- "auth + library" --> jellyfin
+    seerr -- "requests via gluetun" --> radarr & sonarr
     trailarr -- "API via gluetun" --> radarr & sonarr
     trailarr -- "-trailer.mkv" --> data
     traefik -- "labels on gluetun" --> gluetun

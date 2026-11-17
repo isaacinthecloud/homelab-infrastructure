@@ -35,3 +35,5 @@
   include_tags: ['^4\.\d+\.\d+$']
 - name: docker.io/nandyalu/trailarr
   include_tags: ['^0\.\d+\.\d+$']
+- name: ghcr.io/seerr-team/seerr
+  include_tags: ['^v3\.\d+\.\d+$']
