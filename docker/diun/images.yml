@@ -33,3 +33,5 @@
   include_tags: ['^v\d+\.\d+\.\d+$']
 - name: docker.io/crazymax/diun
   include_tags: ['^4\.\d+\.\d+$']
+- name: docker.io/nandyalu/trailarr
+  include_tags: ['^0\.\d+\.\d+$']

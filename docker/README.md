@@ -35,6 +35,7 @@ Docker runs in LXC 103 on Proxmox, hosting all containerized applications includ
 
 ### Media Server
 - **Jellyfin** — Media streaming server for local household access, hardware transcoding via Intel Quick Sync
+- **Trailarr** — Downloads trailers for Radarr/Sonarr titles as local files for Jellyfin (not via VPN)
 
 ### File Sync
 - **Syncthing** — Obsidian vault sync between laptop, desktop and phone, with the NAS as the always-on copy ([details](syncthing/README.md))

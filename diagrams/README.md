@@ -137,6 +137,7 @@ flowchart TB
         portainer["Portainer :9000"]
         jellyfin["Jellyfin :8096<br/>Intel Quick Sync<br/>/data/media (read-only)"]
         syncthing["Syncthing :8384<br/>sync :22000 tcp/quic<br/>/obsidian"]
+        trailarr["Trailarr :7889<br/>trailers via YouTube"]
         subgraph vpn["Gluetun · NordVPN tunnel · kill switch"]
             gluetun["Gluetun<br/>health-checked"]
             radarr["Radarr :7878"]
@@ -153,6 +154,9 @@ flowchart TB
     traefik --> portainer
     traefik --> jellyfin
     traefik --> syncthing
+    traefik --> trailarr
+    trailarr -- "API via gluetun" --> radarr & sonarr
+    trailarr -- "-trailer.mkv" --> data
     traefik -- "labels on gluetun" --> gluetun
     prowlarr --> radarr & sonarr & lidarr
     prowlarr -. "Cloudflare challenges" .-> flare

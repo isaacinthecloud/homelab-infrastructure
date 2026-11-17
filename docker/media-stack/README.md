@@ -17,12 +17,14 @@ The media stack consists of the ARR suite for automated media management, qBitto
 | FlareSolverr | Cloudflare challenge solver for Prowlarr | 8191 | via Gluetun |
 | qBittorrent  | Torrent client                  | 8080 | via Gluetun |
 | Jellyfin     | Media server                    | 8096 | traefik-net (no VPN) |
+| Trailarr     | Downloads trailers for Radarr/Sonarr titles | 7889 | traefik-net (no VPN) |
 
 ## Network Architecture
 
 - All ARR services, FlareSolverr and qBittorrent share Gluetun's network namespace (`network_mode: service:gluetun`)
 - Their web UIs are published through Traefik labels on the Gluetun container
 - Jellyfin remains on the local network to provide fast, reliable streaming to household devices
+- Trailarr also stays off the VPN (YouTube blocks most VPN exit IPs) and reaches Radarr/Sonarr at `http://gluetun:7878` / `http://gluetun:8989`
 - Gluetun kill switch prevents any outbound traffic if the VPN tunnel disconnects
 - VPN apps only start once Gluetun reports healthy (`depends_on: condition: service_healthy`)
 
@@ -46,9 +48,14 @@ Media and downloads live on **one** TrueNAS dataset (`datastore/data`, 1M record
 |---|---|
 | Radarr, Sonarr, Lidarr, Bazarr, qBittorrent | `/data:/data` (same path everywhere, so hardlinks work) |
 | Jellyfin | `/data/media:/data/media:ro` (read-only) |
+| Trailarr | `/data/media:/data/media` (read-write: saves `<Title>-trailer.mkv` next to each movie/show, which Jellyfin picks up as a local trailer) |
 | All apps | `/config` on the LXC's local disk (SQLite databases are kept off NFS) |
 
 The dataset reaches the containers in two steps: TrueNAS exports it over NFS **to the Proxmox host only**, and the host bind-mounts it into LXC 103 (`mp0: /mnt/pve/truenas-data,mp=/data`). Files are written as a single non-root NAS user (`mapall`), and a guard on the empty mount point prevents writes to local disk if the NFS share is down.
+
+## Quality Profiles
+
+Radarr and Sonarr both have a **Best Available** profile: WEB/HDTV/Bluray at 1080p and 2160p plus Remuxes, upgrades enabled, cutoff at Remux-2160p (Sonarr: Bluray-2160p Remux). No custom formats.
 
 ## Hardware Transcoding
 

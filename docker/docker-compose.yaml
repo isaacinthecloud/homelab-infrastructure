@@ -339,3 +339,26 @@ services:
       - /mnt/truenas/Config/diun/smtp_pass:/etc/diun/smtp_pass:ro
       - /mnt/truenas/Config/diun/data:/data
     restart: unless-stopped
+
+  # ===========================================
+  # TRAILARR - Trailers for Radarr/Sonarr (NOT via VPN; YouTube blocks VPN IPs)
+  # ===========================================
+  trailarr:
+    image: nandyalu/trailarr:0.14.2
+    container_name: trailarr
+    networks:
+      - traefik-net
+    environment:
+      - PUID=3000
+      - PGID=3000
+      - TZ=${TZ}
+    volumes:
+      - /mnt/truenas/Config/trailarr:/config
+      - /data/media:/data/media        # same path as Radarr/Sonarr see it; needs rw to save trailers
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trailarr.rule=Host(`trailarr.lab.${DOMAIN}`)"
+      - "traefik.http.routers.trailarr.entrypoints=websecure"
+      - "traefik.http.routers.trailarr.tls.certresolver=letsencrypt"
+      - "traefik.http.services.trailarr.loadbalancer.server.port=7889"
