@@ -27,7 +27,26 @@ reboot                        # new kernel
 
 Guests come back in startup order (AdGuard → Tailscale → TrueNAS + 120 s → Docker). After the reboot, check that `pvesm status` shows every NFS storage active and that all containers are running.
 
-Major version upgrades (e.g. Proxmox VE 8 → 9) are planned separately.
+Major version upgrades are planned separately (see below).
+
+### Major upgrade: Proxmox VE 8 → 9 (done November 2026)
+
+Proxmox VE 8 reached end of life in August 2026: apt stops offering updates, so "nothing to upgrade" doesn't mean the host is current. Upgraded 8.4.21 → **9.2.28** (Debian 12 → 13, kernel 6.8 → 7.0) in one evening with about 10 minutes of downtime.
+
+1. **Back up first.** Fresh `vzdump` of the core guests marked `--protected 1` (so retention can't prune them), the host `/etc` archive, and `dpkg --get-selections`. Keep one copy off the Proxmox host
+2. **Run `pve8to9 --full`** until it reports 0 failures. Here the only failure was the unused `systemd-boot` meta-package (the host boots with GRUB); removing it was safe
+3. **Pin the NIC name** (see [Network Bridges](../proxmox/network-bridges.md)) so a renamed interface can't take the host off the network
+4. **Switch the repos to trixie**, using deb822 `.sources` files: Debian (add `non-free-firmware`), `pve-no-subscription`, and `ceph-squid` (Ceph client libraries are installed even without Ceph). Nothing installs packages automatically on the host, so this can be done hours ahead
+5. **Download first:** `apt-get dist-upgrade --download-only` while everything is still running, to keep the outage short
+6. **Stop the LXC containers.** The TrueNAS VM can stay up until the reboot: a running VM keeps using its old QEMU binary, and keeping it up stops the host's NFS mounts from hanging during the upgrade
+7. **Upgrade** with `dist-upgrade` in a session that survives an SSH drop (`tmux`, or a `systemd-run` unit with a log file). Keep your own config files when asked. Here that meant `lvm.conf` (it has Proxmox's `global_filter`) and `/etc/issue`
+8. **Before rebooting**, check that the new kernel's initramfs contains the vfio and NIC-pinning files, that GRUB's default entry is the new kernel, and that `sshd -t` passes
+9. **After rebooting**, check that 00:17 is bound to `vfio-pci`, the host sees no SATA disks or pools, there are no failed units, guests start in order, NFS storages are active, all containers are up, the VPN exits where expected, Jellyfin QSV works, and Traefik routes respond
+10. **Install `intel-microcode`** (`dist-upgrade` doesn't add new packages) and reboot once more
+
+Rollback: there is no in-place downgrade. Reinstall Proxmox VE 8, restore `/etc` and the protected guest backups. Unprotect those backups after a few days of stable running.
+
+The LXC containers are still on Debian 12, which is supported on Proxmox VE 9. Moving them to Debian 13 is a separate task.
 
 ## 3. LXC Containers
 
@@ -62,3 +81,6 @@ docker compose up -d <service>
 | Docker 28 → 29 | New minimum Docker API version breaks older Traefik/Portainer | Update those images in the same change |
 | Pinning recreated every container | Compose treats a changed `image:` string as a config change | Expect a brief restart when changing tags |
 | Diun watching ancient tags | Four-part version tags don't sort as semver | Watch `:latest` digests for those images |
+| Proxmox VE 8 quietly end-of-life | EOL repos just stop offering updates; apt looks "up to date" | Track the Proxmox lifecycle table, not apt output |
+| `pve8to9` failure: systemd-boot | Debian meta-package installed but never used (host boots with GRUB) | `apt remove systemd-boot` |
+| Microcode still old after the upgrade | `dist-upgrade` only upgrades installed packages | Install `intel-microcode` from `non-free-firmware` |

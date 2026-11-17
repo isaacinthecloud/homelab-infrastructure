@@ -8,10 +8,12 @@ Proxmox VE serves as the Type-1 hypervisor hosting all virtualized workloads. Th
 
 | Component | Details |
 |-----------|---------|
-| Proxmox Version | 8.4.21 (kernel 6.8.12) |
+| Proxmox Version | 9.2.28 (Debian 13 "trixie", kernel 7.0.14) |
+| Package repos | `pve-no-subscription`, Debian with `non-free-firmware` (deb822 `.sources` files) |
+| CPU microcode | `intel-microcode`, loaded early at boot |
 | Hostname | pve |
 | Boot / guest storage | NVMe SSD, LVM-thin (`local-lvm`) |
-| Physical NIC | enp4s0 |
+| Physical NIC | enp4s0 (name pinned by MAC, see [Network Bridges](network-bridges.md)) |
 | Bridge Mode | VLAN-aware |
 | Primary Bridge | vmbr0 |
 | iGPU | Intel UHD 730, render node passed to the Docker LXC |

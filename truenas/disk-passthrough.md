@@ -23,7 +23,7 @@ I enabled IOMMU support in the Proxmox host to allow PCI device passthrough:
 
 1. **BIOS Configuration** - Enabled Intel VT-d (or AMD-Vi for AMD systems)
 
-2. **Kernel** - The Proxmox 6.8 kernel enables the Intel IOMMU by default, so no extra GRUB parameters are needed (`GRUB_CMDLINE_LINUX_DEFAULT="quiet"`). Older kernels needed `intel_iommu=on iommu=pt`.
+2. **Kernel** - Proxmox kernels from 6.8 on (including 7.0 on Proxmox VE 9) enable the Intel IOMMU by default, so no extra GRUB parameters are needed (`GRUB_CMDLINE_LINUX_DEFAULT="quiet"`). Older kernels needed `intel_iommu=on iommu=pt`.
 
 3. **Verified IOMMU Status:**
    ```bash

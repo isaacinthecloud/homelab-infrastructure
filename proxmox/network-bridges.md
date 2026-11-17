@@ -14,6 +14,23 @@ enp4s0
 └── Role: Trunk port carrying all VLANs
 ```
 
+### Interface Name Pinning
+
+Kernel and systemd upgrades can change how network interfaces are named. If `enp4s0` came back under another name, `vmbr0` would have no uplink and the host would be unreachable without a local console. The name is pinned to the NIC's MAC address with a systemd `.link` file, so `/etc/network/interfaces` never has to change:
+
+**`/etc/systemd/network/10-pin-enp4s0.link`:**
+
+```
+[Match]
+MACAddress=10:7c:61:3f:xx:xx
+Type=ether
+
+[Link]
+Name=enp4s0
+```
+
+Then `update-initramfs -u -k all` so the rule also applies in early boot. Check with `udevadm test-builtin net_setup_link /sys/class/net/enp4s0`. Added before the Proxmox VE 9 upgrade (kernel 6.8 → 7.0). Proxmox's own `pve-network-interface-pinning` tool does the same thing but renames interfaces to `nicN`.
+
 ## Bridge Configuration
 
 ### vmbr0 — Primary Bridge (VLAN-Aware)
