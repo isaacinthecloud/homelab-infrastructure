@@ -212,6 +212,8 @@ services:
     volumes:
       - /mnt/truenas/Config/bazarr:/config
       - /data:/data
+      # startup patch: Latin American Spanish subs as .es-419 (the code Jellyfin understands)
+      - ./bazarr/custom-cont-init.d:/custom-cont-init.d:ro
     restart: unless-stopped
     depends_on:
       gluetun:
