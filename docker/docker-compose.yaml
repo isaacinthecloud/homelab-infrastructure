@@ -146,7 +146,7 @@ services:
   # RADARR - Movie Management
   # ===========================================
   radarr:
-    image: lscr.io/linuxserver/radarr:6.4.4.10685-ls326
+    image: lscr.io/linuxserver/radarr:7.0.3.10918-ls328
     container_name: radarr
     network_mode: "service:gluetun"
     environment:
@@ -184,7 +184,7 @@ services:
   # PROWLARR - Indexer Manager
   # ===========================================
   prowlarr:
-    image: lscr.io/linuxserver/prowlarr:2.7.0.5723-ls168
+    image: lscr.io/linuxserver/prowlarr:3.0.2.5780-ls169
     container_name: prowlarr
     network_mode: "service:gluetun"
     environment:
