@@ -8,26 +8,26 @@
 - name: docker.io/qmcgaw/gluetun
   include_tags: ['^v3\.\d+\.\d+$']
 - name: lscr.io/linuxserver/radarr:latest   # version tags don't sort; alert when :latest moves
-  watch_repo: false
+  watch_mode: tag
   notify_on: [update]
 - name: lscr.io/linuxserver/sonarr:latest   # version tags don't sort; alert when :latest moves
-  watch_repo: false
+  watch_mode: tag
   notify_on: [update]
 - name: lscr.io/linuxserver/prowlarr:latest   # version tags don't sort; alert when :latest moves
-  watch_repo: false
+  watch_mode: tag
   notify_on: [update]
 - name: lscr.io/linuxserver/lidarr:latest   # version tags don't sort; alert when :latest moves
-  watch_repo: false
+  watch_mode: tag
   notify_on: [update]
 - name: lscr.io/linuxserver/bazarr
   include_tags: ['^v\d+\.\d+\.\d+-ls\d+$']
 - name: lscr.io/linuxserver/qbittorrent:latest   # version tags don't sort; alert when :latest moves
-  watch_repo: false
+  watch_mode: tag
   notify_on: [update]
 - name: lscr.io/linuxserver/syncthing
   include_tags: ['^v\d+\.\d+\.\d+-ls\d+$']
 - name: lscr.io/linuxserver/jellyfin:latest   # version tags don't sort; alert when :latest moves
-  watch_repo: false
+  watch_mode: tag
   notify_on: [update]
 - name: ghcr.io/flaresolverr/flaresolverr
   include_tags: ['^v\d+\.\d+\.\d+$']

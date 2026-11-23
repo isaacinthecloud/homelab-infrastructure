@@ -332,7 +332,7 @@ services:
   # DIUN - weekly "new image tag" email (no auto-updates, no docker.sock)
   # ===========================================
   diun:
-    image: docker.io/crazymax/diun:4.33.1
+    image: docker.io/crazymax/diun:4.34.0
     container_name: diun
     hostname: homelab-diun
     command: serve

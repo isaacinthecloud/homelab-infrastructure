@@ -9,7 +9,7 @@ watch:
   firstCheckNotif: false      # first run only records existing tags
   runOnStartup: true
 defaults:
-  watchRepo: true
+  watchMode: all
   sortTags: semver
   maxTags: 10
   notifyOn: [new]
