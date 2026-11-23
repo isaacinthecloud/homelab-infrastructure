@@ -26,7 +26,7 @@ services:
   # TRAEFIK - Reverse Proxy with SSL
   # ===========================================
   traefik:
-    image: traefik:v3.7.19
+    image: traefik:v3.7.20
     container_name: traefik
     restart: unless-stopped
     security_opt:
