@@ -1,6 +1,6 @@
 # File-provider routes for services that are NOT containers on this host.
-# Gives Proxmox, TrueNAS and AdGuard a trusted Let's Encrypt certificate under
-# *.lab.example.com. IPs are placeholders.
+# Gives Proxmox, TrueNAS, AdGuard and Home Assistant a trusted Let's Encrypt
+# certificate under *.lab.example.com. IPs are placeholders.
 http:
   routers:
     proxmox:
@@ -21,6 +21,12 @@ http:
       tls:
         certResolver: letsencrypt
       service: adguard
+    homeassistant:
+      rule: "Host(`ha.lab.example.com`)"
+      entryPoints: [websecure]
+      tls:
+        certResolver: letsencrypt
+      service: homeassistant
 
   services:
     proxmox:
@@ -36,6 +42,11 @@ http:
     adguard:
       loadBalancer:
         servers:
+          - url: "http://10.2.1.x"
+    homeassistant:
+      loadBalancer:
+        servers:
+          # Port 80: HAOS serves the UI there; :8123 only redirects to :80
           - url: "http://10.2.1.x"
 
   serversTransports:

@@ -9,7 +9,7 @@ Proxmox VE serves as the Type-1 hypervisor hosting all virtualized workloads. Th
 | Component | Details |
 |-----------|---------|
 | Proxmox Version | 9.2.28 (Debian 13 "trixie", kernel 7.0.14) |
-| Package repos | `pve-no-subscription`, Debian with `non-free-firmware` (deb822 `.sources` files) |
+| Package repos | `pve-no-subscription`, Debian with `non-free-firmware` (deb822 `.sources` files). `pve-enterprise.sources` is kept with `Enabled: no` (the PVE 9 upgrade re-added it, and `apt update` got a 401 every day) |
 | CPU microcode | `intel-microcode`, loaded early at boot |
 | Hostname | pve |
 | Boot / guest storage | NVMe SSD, LVM-thin (`local-lvm`) |
@@ -17,6 +17,7 @@ Proxmox VE serves as the Type-1 hypervisor hosting all virtualized workloads. Th
 | Bridge Mode | VLAN-aware |
 | Primary Bridge | vmbr0 |
 | iGPU | Intel UHD 730, render node passed to the Docker LXC |
+| Firewall | Datacenter firewall on with ACCEPT policies; only Home Assistant's IoT NIC is filtered (see [Home Assistant](../homeassistant/README.md#firewall)) |
 
 ## Workloads
 
@@ -32,6 +33,7 @@ Proxmox VE serves as the Type-1 hypervisor hosting all virtualized workloads. Th
 |----|------|---------|------|------------|
 | 100 | truenas | ZFS Storage (NFS/SMB/iSCSI/SFTP) | 21 | 3 (+120 s delay) |
 | 104 | dc01 | Domain Controller (Lab/Testing) | 21 | manual |
+| 105 | homeassistant | Home Assistant OS ([details](../homeassistant/README.md)) | 21 + 210 (IoT) | on boot, no fixed order |
 
 Additional security-lab guests (CT 200, VMs 500–503) are kept powered off and are out of scope for this repository.
 

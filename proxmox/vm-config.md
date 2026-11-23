@@ -2,7 +2,7 @@
 
 ## Overview
 
-Full KVM virtual machines are used when LXC containers aren't suitable — specifically for PCIe passthrough (TrueNAS) and Windows workloads (DC01).
+Full KVM virtual machines are used when LXC containers aren't suitable — specifically for PCIe passthrough (TrueNAS), Windows workloads (DC01) and appliance OSes (Home Assistant OS).
 
 ## VM Summary
 
@@ -10,6 +10,7 @@ Full KVM virtual machines are used when LXC containers aren't suitable — speci
 |---|---|---|---|---|---|
 |100|truenas|4|16GB (no ballooning)|20GB + Passthrough|ZFS Storage Server|
 |104|dc01|4|8GB|60GB|Windows Domain Controller|
+|105|homeassistant|2|2GB|32GB|Home Assistant OS, dual-homed on trusted + IoT VLANs ([details](../homeassistant/README.md))|
 
 ## VM 100 — TrueNAS SCALE
 
