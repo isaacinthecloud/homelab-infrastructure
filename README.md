@@ -62,8 +62,14 @@ Core network services run in their own LXC containers (AdGuard Home for DNS filt
   <li><b>ARR Suite + qBittorrent</b> - Automated media management, routed through a Gluetun VPN container</li>
   <li><b>Jellyfin</b> - Media server with Intel Quick Sync hardware transcoding</li>
   <li><b>Syncthing</b> - Always-on sync hub for an Obsidian vault</li>
+  <li><b>Seerr + Trailarr</b> - Media requests for household users, and local trailers for the library</li>
+  <li><b>Immich</b> - Self-hosted photo library with OpenVINO machine learning on the iGPU</li>
   <li><b>Diun</b> - Weekly email when a pinned container image has a newer version</li>
 </ul>
+
+<p>
+<b>Home Assistant OS</b> runs in its own VM, dual-homed on the trusted and IoT VLANs, with the Proxmox firewall dropping unsolicited traffic from IoT devices (see <a href="homeassistant/README.md">homeassistant</a>).
+</p>
 
 <p>
 Running these services in containers provides isolation, simplified updates, and portability. This approach avoids tight coupling between services and the host OS while allowing quick recovery or migration if needed.
@@ -91,6 +97,7 @@ Running these services in containers provides isolation, simplified updates, and
 | [truenas](truenas/README.md) | ZFS pool, datasets, shares, disk passthrough |
 | [docker](docker/README.md) | Compose stack, Traefik, media stack, Syncthing, Diun |
 | [adguard](adguard/README.md) / [tailscale](tailscale/README.md) | DNS filtering and remote access |
+| [homeassistant](homeassistant/README.md) | Home Assistant VM, IoT VLAN access, Proxmox firewall |
 | [backups](backups/README.md) | Backup layers, schedules, laptop restic scripts |
 | [monitoring](monitoring/README.md) | Email alerting and cost guardrails |
 | [security](security/README.md) | Threat model, hardening, secrets handling |

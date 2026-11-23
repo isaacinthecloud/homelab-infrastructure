@@ -99,6 +99,7 @@ docker compose up -d <service>
 | Docker 28 → 29 | New minimum Docker API version breaks older Traefik/Portainer | Update those images in the same change |
 | Pinning recreated every container | Compose treats a changed `image:` string as a config change | Expect a brief restart when changing tags |
 | Diun watching ancient tags | Four-part version tags don't sort as semver | Watch `:latest` digests for those images |
+| `apt update` 401 every day after the PVE 9 upgrade | The upgrade re-created `pve-enterprise.sources` (no subscription) | Set `Enabled: no` in it; re-check after every PVE upgrade |
 | Diun emailed every old tag of newly added images | `firstCheckNotif` is decided per tag job, racing with the `:latest` job | Add new images with `notify_on: [unchange]` for one run ([Diun README](../docker/diun/README.md#adding-an-image)) |
 | Proxmox VE 8 quietly end-of-life | EOL repos just stop offering updates; apt looks "up to date" | Track the Proxmox lifecycle table, not apt output |
 | `pve8to9` failure: systemd-boot | Debian meta-package installed but never used (host boots with GRUB) | `apt remove systemd-boot` |

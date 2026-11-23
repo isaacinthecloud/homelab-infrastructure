@@ -31,7 +31,7 @@ The media stack consists of the ARR suite for automated media management, qBitto
 
 ## Storage Layout
 
-Media and downloads live on **one** TrueNAS dataset (`datastore/data`, 1M recordsize), so completed downloads are imported as **instant hardlinks** instead of slow copies:
+Media and downloads live on **one** TrueNAS dataset (`datastore/data`, 1M recordsize), so imports never cross a filesystem. Lidarr imports as instant hardlinks. Radarr and Sonarr have hardlinks **turned off** (since November 2026) and import a separate copy, so library files can be edited in place, e.g. to rename subtitle tracks, without touching the data qBittorrent is still seeding. That costs double space until a torrent stops seeding and is removed:
 
 ```
 /data
@@ -39,7 +39,7 @@ Media and downloads live on **one** TrueNAS dataset (`datastore/data`, 1M record
 │   ├── movies/        #   category radarr
 │   ├── tv/            #   category tv-sonarr
 │   └── music/         #   category lidarr
-└── media/             # Libraries the *arr apps import into (hardlinks)
+└── media/             # Libraries the *arr apps import into
     ├── movies/
     ├── tv/
     └── music/
@@ -47,7 +47,7 @@ Media and downloads live on **one** TrueNAS dataset (`datastore/data`, 1M record
 
 | Container | Mount |
 |---|---|
-| Radarr, Sonarr, Lidarr, Bazarr, qBittorrent | `/data:/data` (same path everywhere, so hardlinks work) |
+| Radarr, Sonarr, Lidarr, Bazarr, qBittorrent | `/data:/data` (same path everywhere, so imports stay on one filesystem) |
 | Jellyfin | `/data/media:/data/media:ro` (read-only) |
 | Trailarr | `/data/media:/data/media` (read-write: saves `<Title>-trailer.mkv` next to each movie/show, which Jellyfin picks up as a local trailer) |
 | All apps | `/config` on the LXC's local disk (SQLite databases are kept off NFS) |
@@ -56,13 +56,38 @@ The dataset reaches the containers in two steps: TrueNAS exports it over NFS **t
 
 ## Quality Profiles
 
-Radarr and Sonarr both have a **Best Available** profile: WEB/HDTV/Bluray at 1080p and 2160p plus Remuxes, upgrades enabled, cutoff at Remux-2160p (Sonarr: Bluray-2160p Remux). No custom formats.
+Radarr and Sonarr both have a **Best Available** profile, the default for Seerr requests. The goal is 4K HDR without huge files:
+
+- **Allowed:** HDTV, WEB and Bluray at 1080p and 2160p. Remux, BR-DISK and Raw-HD are disallowed in every profile.
+- **Size cap** for Bluray-2160p: 250 MB/min in Radarr, 200 MB/min in Sonarr.
+- **Upgrades** until Bluray-2160p **and** a custom format score of 100 (`minFormatScore` 0).
+
+| Custom format | Matches | Score (all profiles) |
+|---|---|---|
+| HDR | HDR / DV in the release title | +100 (Best Available upgrades until it has it) |
+| DV + HDR10+ | Both Dolby Vision and HDR10+ | 0 (kept for reference: Jellyfin won't fall back to HDR10 on these, so they transcode on the TV) |
+| Dub only (no Japanese) | English dub tag, not Dual/Multi audio | -1000 (rejected: anime should keep Japanese audio) |
+| French | VF / VOSTFR / FRENCH / TRUEFRENCH ... | -1000 (rejected) |
+
+Gotcha: the *arr "Add" dialog has no server-side default profile. It remembers the last one used per browser and otherwise falls back to the first one ("Any", which never upgrades), so check the profile when adding manually.
 
 Lidarr's **Best Available** accepts High Quality Lossy (MP3 V0/320, AAC-320, ...) and Lossless, upgrading until Lossless; it is the music root folder's default.
 
 ## Subtitles (Bazarr)
 
 Language profile **English+Spanish** (en, es, es-419) is the default for movies and series. Sources need no accounts: embedded subtitles (already inside the file), Gestdown (TV), YIFY Subtitles (movies), Subtitulamos.tv and Subtis (Spanish). Podnapisi is gone from current Bazarr and TVsubtitles is forced off. OpenSubtitles.com is the best single source but needs a free account.
+
+## Seeding (qBittorrent)
+
+| Setting | Value |
+|---|---|
+| Share limit | Ratio 1.0 **or** 7 days of seeding (10080 min), whichever comes first, then the torrent is **stopped** |
+| Queue | 15 active downloads, 60 active uploads, 75 active torrents; slow torrents don't count toward the limits |
+| Excluded file names | Executables, scripts, shortcuts, installers and disk images (`*.exe`, `*.scr`, `*.lnk`, `*.bat`, `*.ps1`, `*.msi`, `*.iso`, ...) are never downloaded |
+
+Radarr and Sonarr have "Remove completed downloads" on, so they delete a torrent once qBittorrent has stopped it; the imported library file stays. The 7-day limit only counts time spent actively seeding, which is why the queue limits are generous: with the original 3 active uploads, queued torrents never aged out.
+
+NordVPN offers no port forwarding, so public swarms are slower than on an open connection.
 
 ## Indexers (Prowlarr, public only)
 
