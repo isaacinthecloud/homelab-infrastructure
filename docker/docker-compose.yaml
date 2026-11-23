@@ -63,7 +63,7 @@ services:
   # PORTAINER - Container Management
   # ===========================================
   portainer:
-    image: portainer/portainer-ce:2.45.3
+    image: portainer/portainer-ce:2.45.4
     container_name: portainer
     restart: unless-stopped
     security_opt:
@@ -165,7 +165,7 @@ services:
   # SONARR - TV Show Management
   # ===========================================
   sonarr:
-    image: lscr.io/linuxserver/sonarr:4.0.20.3014-ls5
+    image: lscr.io/linuxserver/sonarr:4.0.20.3014-ls6
     container_name: sonarr
     network_mode: "service:gluetun"
     environment:
@@ -202,7 +202,7 @@ services:
   # BAZARR - Subtitle Management
   # ===========================================
   bazarr:
-    image: lscr.io/linuxserver/bazarr:v1.6.2-ls372
+    image: lscr.io/linuxserver/bazarr:v1.6.2-ls373
     container_name: bazarr
     network_mode: "service:gluetun"
     environment:
@@ -223,7 +223,7 @@ services:
   # LIDARR - Music Management
   # ===========================================
   lidarr:
-    image: lscr.io/linuxserver/lidarr:3.1.6.5079-ls48
+    image: lscr.io/linuxserver/lidarr:3.1.6.5079-ls49
     container_name: lidarr
     network_mode: "service:gluetun"
     environment:
@@ -242,7 +242,7 @@ services:
   # QBITTORRENT - Torrent Client
   # ===========================================
   qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:5.3.0_v2.1.2-ls487
+    image: lscr.io/linuxserver/qbittorrent:5.3.0_v2.1.3-ls489
     container_name: qbittorrent
     network_mode: "service:gluetun"
     environment:
@@ -278,7 +278,7 @@ services:
   # SYNCTHING - Obsidian vault sync (NOT via VPN; reached over LAN/Tailscale)
   # ===========================================
   syncthing:
-    image: lscr.io/linuxserver/syncthing:v2.1.7-ls237
+    image: lscr.io/linuxserver/syncthing:v2.1.7-ls238
     container_name: syncthing
     hostname: homelab-syncthing
     networks:
@@ -305,7 +305,7 @@ services:
   # JELLYFIN - Media Server (Family Access)
   # ===========================================
   jellyfin:
-    image: lscr.io/linuxserver/jellyfin:12.4ubu2604-ls59
+    image: lscr.io/linuxserver/jellyfin:12.4ubu2604-ls60
     container_name: jellyfin
     devices:
       - /dev/dri:/dev/dri
