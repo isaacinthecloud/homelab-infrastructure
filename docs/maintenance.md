@@ -100,6 +100,7 @@ docker compose up -d <service>
 | Pinning recreated every container | Compose treats a changed `image:` string as a config change | Expect a brief restart when changing tags |
 | Diun watching ancient tags | Four-part version tags don't sort as semver | Watch `:latest` digests for those images |
 | `apt update` 401 every day after the PVE 9 upgrade | The upgrade re-created `pve-enterprise.sources` (no subscription) | Set `Enabled: no` in it; re-check after every PVE upgrade |
+| Gluetun `AUTH_FAILED` loop, all downloads stalled (2026-11-27) | Server filter by country only; Gluetun picked NordVPN "Dedicated IP" servers, which Nord started refusing for normal accounts | `SERVER_CATEGORIES=P2P`. Test creds with a throwaway gluetun on a named standard server (`SERVER_HOSTNAMES=`) before suspecting the account |
 | Diun emailed every old tag of newly added images | `firstCheckNotif` is decided per tag job, racing with the `:latest` job | Add new images with `notify_on: [unchange]` for one run ([Diun README](../docker/diun/README.md#adding-an-image)) |
 | Proxmox VE 8 quietly end-of-life | EOL repos just stop offering updates; apt looks "up to date" | Track the Proxmox lifecycle table, not apt output |
 | `pve8to9` failure: systemd-boot | Debian meta-package installed but never used (host boots with GRUB) | `apt remove systemd-boot` |

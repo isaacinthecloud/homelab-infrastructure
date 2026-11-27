@@ -101,6 +101,7 @@ services:
       - OPENVPN_USER=${VPN_USER}
       - OPENVPN_PASSWORD=${VPN_PASSWORD}
       - SERVER_COUNTRIES=Netherlands
+      - SERVER_CATEGORIES=P2P          # standard P2P servers only; Dedicated IP servers reject normal accounts (AUTH_FAILED)
       - UPDATER_PERIOD=24h
       - TZ=${TZ}
     restart: unless-stopped
