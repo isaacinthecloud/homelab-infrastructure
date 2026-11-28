@@ -1,0 +1,13 @@
+---
+# Top bar, same two widgets as Techno Tim's final version.
+# "resources" reports what the Homepage container sees: the Docker LXC (CT 103).
+- resources:
+    label: Docker host
+    cpu: true
+    memory: true
+    disk: /
+
+- datetime:
+    text_size: xl
+    format:
+      timeStyle: short

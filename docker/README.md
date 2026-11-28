@@ -23,6 +23,7 @@ Docker runs in LXC 103 on Proxmox, hosting all containerized applications includ
 - **Traefik** — Reverse proxy with automatic SSL ([details](traefik/README.md))
 - **Portainer** — Container management UI
 - **Diun** — Weekly email when a newer image version exists ([details](diun/README.md))
+- **Homepage** — Dashboard at `home.lab` with live widgets for every service; read-only Docker access through a socket proxy ([details](homepage/README.md))
 
 ### Media Stack (via Gluetun VPN)
 - **Radarr** — Movie management

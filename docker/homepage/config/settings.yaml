@@ -1,0 +1,42 @@
+---
+# Blurred, dimmed wallpaper, dark slate theme, one row-style group per area,
+# 4 columns, equal card heights.
+
+title: Homelab
+favicon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/proxmox.svg
+
+background:
+  image: https://cdnb.artstation.com/p/assets/images/images/006/897/659/large/mikael-gustafsson-wallpaper-mikael-gustafsson.jpg
+  blur: sm
+  saturate: 100
+  brightness: 50
+  opacity: 100
+
+theme: dark
+color: slate
+useEqualHeights: true
+hideVersion: true
+statusStyle: dot          # small green/red dot per card from the Docker status / site monitor
+target: _blank
+
+layout:
+  Infrastructure:
+    header: true
+    style: row
+    columns: 4
+  Network:
+    header: true
+    style: row
+    columns: 4
+  Media:
+    header: true
+    style: row
+    columns: 4
+  Downloads:
+    header: true
+    style: row
+    columns: 4
+  Home:
+    header: true
+    style: row
+    columns: 4

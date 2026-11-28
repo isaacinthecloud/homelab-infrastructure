@@ -1,0 +1,6 @@
+---
+# Read-only Docker API via the socket proxy (CONTAINERS=1, POST=0).
+# Lets cards show running/stopped and CPU/RAM; Homepage never sees docker.sock.
+docker:
+  host: homepage-socket-proxy
+  port: 2375

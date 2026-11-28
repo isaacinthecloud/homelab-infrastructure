@@ -41,3 +41,7 @@
   include_tags: ['^v\d+\.\d+\.\d+$']
 - name: ghcr.io/immich-app/immich-machine-learning
   include_tags: ['^v\d+\.\d+\.\d+-openvino$']
+- name: ghcr.io/gethomepage/homepage
+  include_tags: ['^v2\.\d+\.\d+$']
+- name: lscr.io/linuxserver/socket-proxy
+  include_tags: ['^\d+\.\d+\.\d+-r\d+-ls\d+$']

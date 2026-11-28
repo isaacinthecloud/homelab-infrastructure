@@ -19,6 +19,9 @@ networks:
   immich-net:
     name: immich-net
     driver: bridge
+  homepage-net:
+    name: homepage-net
+    driver: bridge
 
 services:
 
@@ -480,3 +483,49 @@ services:
     restart: unless-stopped
     healthcheck:
       disable: false
+
+  # ===========================================
+  # HOMEPAGE - Dashboard at home.lab (read-only Docker API via socket proxy)
+  # ===========================================
+  homepage:
+    image: ghcr.io/gethomepage/homepage:v2.8.0
+    container_name: homepage
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - traefik-net
+      - homepage-net
+    env_file:
+      - /root/docker/homepage.env      # HOMEPAGE_VAR_* widget keys (mode 600, not in repo; see homepage/homepage.env.example)
+    environment:
+      - TZ=${TZ}
+      - HOMEPAGE_ALLOWED_HOSTS=home.lab.${DOMAIN}
+      - HOMEPAGE_VAR_DOMAIN=${DOMAIN}
+    volumes:
+      - /root/docker/homepage/config:/app/config
+    depends_on:
+      - homepage-socket-proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-net"
+      - "traefik.http.routers.homepage.rule=Host(`home.lab.${DOMAIN}`)"
+      - "traefik.http.routers.homepage.entrypoints=websecure"
+      - "traefik.http.routers.homepage.tls.certresolver=letsencrypt"
+      - "traefik.http.services.homepage.loadbalancer.server.port=3000"
+
+  homepage-socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:3.4.8-r0-ls107
+    container_name: homepage-socket-proxy
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - homepage-net                   # private: only Homepage can reach it
+    environment:
+      - CONTAINERS=1                   # list/inspect/stats only
+      - POST=0                         # no writes
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+

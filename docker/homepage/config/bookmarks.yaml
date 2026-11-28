@@ -1,0 +1,14 @@
+---
+- Admin:
+    - Homelab repo:
+        - icon: github.svg
+          href: https://github.com/isaacinthecloud/homelab-infrastructure
+    - UniFi Site Manager:
+        - icon: unifi.svg
+          href: https://unifi.ui.com
+    - Tailscale admin:
+        - icon: tailscale.svg
+          href: https://login.tailscale.com/admin/machines
+    - AWS console:
+        - icon: aws.svg
+          href: https://console.aws.amazon.com
