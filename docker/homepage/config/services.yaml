@@ -89,7 +89,12 @@
         description: NordVPN tunnel for the download stack
         server: docker
         container: gluetun
-        showStats: true
+        widget:
+          type: gluetun
+          url: http://gluetun:8000
+          key: "{{HOMEPAGE_VAR_GLUETUN_KEY}}"   # role "homepage" in gluetun/auth/config.toml: GET /v1/publicip/ip only
+          version: 2
+          fields: ["public_ip", "region", "country"]
 
 - Media:
     - Jellyfin:
