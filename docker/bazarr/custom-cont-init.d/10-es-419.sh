@@ -29,3 +29,15 @@ elif grep -qF "$OLD" "$L"; then
   grep -qF "$NEW" "$L" && echo "[es-419] matcher patched" || echo "[es-419] matcher patch FAILED"
 else echo "[es-419] matcher line changed upstream, not patching"
 fi
+
+# 3) Saved filenames: subliminal_patch builds them from babelfish str() -> "es-MX"; write "es-419" instead
+P=$B/custom_libs/subliminal_patch/core.py
+POLD="subtitle_root += '.' + str(language.basename)"
+PNEW="subtitle_root += '.' + str(language.basename).replace(\"es-MX\", \"es-419\")"
+if [ ! -f "$P" ]; then echo "[es-419] $P not found, skipping"
+elif grep -qF "$PNEW" "$P"; then echo "[es-419] filename already patched"
+elif [ "$(grep -cF "$POLD" "$P")" = 1 ]; then
+  sed -i "s/subtitle_root += '\.' + str(language\.basename)\$/subtitle_root += '.' + str(language.basename).replace(\"es-MX\", \"es-419\")/" "$P"
+  grep -qF "$PNEW" "$P" && echo "[es-419] filename patched" || echo "[es-419] filename patch FAILED"
+else echo "[es-419] filename line changed upstream, not patching"
+fi
