@@ -19,7 +19,7 @@ Proxmox's default notification target sent mail directly from the host to the ad
 |---|---|
 | DKIM | SES Easy DKIM, 2048-bit, 3 CNAME records in Route 53 |
 | SPF | Custom MAIL FROM subdomain (`bounce.example.com`) with its own MX + SPF; the domain's main SPF (Microsoft 365) is untouched |
-| DMARC | `p=none` with aggregate reports to the shared mailbox, to be tightened to `quarantine` once reports are clean |
+| DMARC | `p=quarantine; sp=quarantine; adkim=r; aspf=r` with aggregate reports to the shared mailbox (tightened from `p=none` after reports showed only aligned SES and Microsoft 365 mail) |
 
 Test messages arrived in the inbox (not junk) with SPF, DKIM and DMARC all passing.
 

@@ -66,7 +66,7 @@ Spend is watched by a $10/month budget and Cost Anomaly Detection (see [monitori
 
 ## Email Authentication
 
-The domain publishes DKIM (Microsoft 365 and SES), SPF and a DMARC policy (currently `p=none` with reporting, moving to `quarantine`) so alert mail is delivered and the domain is harder to spoof.
+The domain publishes DKIM (Microsoft 365 and SES), SPF and a DMARC policy (`p=quarantine`, `sp=quarantine`, relaxed alignment, aggregate reporting) so alert mail is delivered and the domain is harder to spoof.
 
 ## Patch Management
 
